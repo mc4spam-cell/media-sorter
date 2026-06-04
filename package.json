@@ -8,7 +8,7 @@
     "dist:linux": "electron-builder --linux AppImage deb",
     "dist:mac": "electron-builder --mac dmg"
   },
-  "author": "mc",
+  "author": "mc <273350363+mc4spam-cell@users.noreply.github.com>",
   "license": "MIT",
   "devDependencies": {
     "electron": "^31.0.0",
