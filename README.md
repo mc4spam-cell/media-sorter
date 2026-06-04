@@ -64,10 +64,20 @@ Click **Open folder…**, then switch between the **Photos** and **Videos** tabs
    - run `xattr -dr com.apple.quarantine "/Applications/Media Sorter.app"` once.
 
 ### Ubuntu / Linux
-Build **on the Linux machine** (so the correct Linux ffmpeg binary is fetched — a build made on macOS would ship the macOS ffmpeg and video thumbnails would not work):
+Build **on the Linux machine** (so the correct Linux ffmpeg binary is fetched — a build made on macOS would ship the macOS ffmpeg and video thumbnails would not work).
+
+**Easiest — the one-shot script:**
+```bash
+git clone https://github.com/mc4spam-cell/media-sorter.git
+cd media-sorter
+bash install-ubuntu.sh
+```
+It installs prerequisites (Node ≥ 18, FUSE), optionally GIMP/Shotcut, builds, and offers to install the `.deb`.
+
+**Manual:**
 ```bash
 sudo apt install -y nodejs npm        # if not already installed
-git clone <this repo> && cd media-sorter   # or copy the project folder over
+git clone https://github.com/mc4spam-cell/media-sorter.git && cd media-sorter
 npm install
 npm run dist:linux                     # produces dist/*.AppImage and dist/*.deb
 ```
