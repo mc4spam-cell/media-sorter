@@ -1,0 +1,29 @@
+# Normalize line endings to LF across macOS/Linux checkouts.
+* text=auto eol=lf
+
+# Explicit text types
+*.js    text
+*.mjs   text
+*.json  text
+*.css   text
+*.html  text
+*.md    text
+*.yml   text
+*.yaml  text
+
+# Binary assets (never normalize/diff)
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.bmp   binary
+*.tiff  binary
+*.icns  binary
+*.ico   binary
+*.dmg   binary
+*.AppImage binary
+*.deb   binary
+
+# Keep lockfile out of diffs/merges noise and language stats
+package-lock.json -diff linguist-generated
