@@ -1,0 +1,23 @@
+'use strict';
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+// Build a file:// URL without Node's url module, which isn't available in the
+// sandboxed preload. Encode each path segment so spaces, #, ? etc. are safe.
+function toFileURL(p) {
+  const norm = String(p).replace(/\\/g, '/');
+  let joined = norm.split('/').map(encodeURIComponent).join('/');
+  if (!joined.startsWith('/')) joined = '/' + joined;
+  return 'file://' + joined;
+}
+
+contextBridge.exposeInMainWorld('api', {
+  toFileURL,
+  openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
+  list: (folder, opts) => ipcRenderer.invoke('fs:list', folder, opts),
+  trash: (filePath) => ipcRenderer.invoke('file:trash', filePath),
+  rename: (oldPath, newName) => ipcRenderer.invoke('file:rename', oldPath, newName),
+  openExternal: (filePath) => ipcRenderer.invoke('file:open', filePath),
+  openWith: (filePath, app) => ipcRenderer.invoke('file:openWith', filePath, app),
+  videoFrames: (filePath, mtimeMs) => ipcRenderer.invoke('video:frames', filePath, mtimeMs),
+});

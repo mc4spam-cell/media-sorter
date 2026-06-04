@@ -1,0 +1,682 @@
+'use strict';
+
+// The renderer script can be evaluated more than once in this realm; guard so
+// top-level bindings (now function-scoped via the IIFE) never collide and
+// listeners are only attached once.
+(function () {
+  if (window.__mediaSorterInit) {
+    console.log('renderer.js re-evaluated; skipping init');
+    return;
+  }
+  window.__mediaSorterInit = true;
+
+const api = window.api;
+
+// ---------- File types ----------
+const TYPE_SETS = {
+  photos: { default: ['jpg', 'jpeg', 'png', 'webp'], extra: ['gif', 'bmp', 'avif', 'tiff', 'tif', 'heic'] },
+  videos: { default: ['avi', 'mpg', 'mpeg', 'mkv'], extra: ['mp4', 'mov', 'm4v', 'webm', 'wmv', 'flv', '3gp'] },
+};
+
+// ---------- State ----------
+const state = {
+  folder: null,
+  kind: 'photos', // 'photos' | 'videos'
+  items: [], // { name, path, mtimeMs, rel }
+  selected: 0,
+  fullscreen: false,
+  recursive: false,
+  maximize: false, // upscale photos to fill the window in fullscreen
+  sortBy: 'name', // 'name' | 'mtime'
+  sortDir: 'asc', // 'asc' | 'desc'
+  types: {
+    photos: new Set(TYPE_SETS.photos.default),
+    videos: new Set(TYPE_SETS.videos.default),
+  },
+};
+
+// ---------- Preferences (persisted) ----------
+const PREF_KEY = 'prefs';
+function savePrefs() {
+  try {
+    localStorage.setItem(
+      PREF_KEY,
+      JSON.stringify({
+        recursive: state.recursive,
+        maximize: state.maximize,
+        sortBy: state.sortBy,
+        sortDir: state.sortDir,
+        types: { photos: [...state.types.photos], videos: [...state.types.videos] },
+      })
+    );
+  } catch {}
+}
+function loadPrefs() {
+  let p;
+  try {
+    p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+  } catch {
+    return;
+  }
+  if (typeof p.recursive === 'boolean') state.recursive = p.recursive;
+  if (typeof p.maximize === 'boolean') state.maximize = p.maximize;
+  if (p.sortBy === 'name' || p.sortBy === 'mtime') state.sortBy = p.sortBy;
+  if (p.sortDir === 'asc' || p.sortDir === 'desc') state.sortDir = p.sortDir;
+  if (p.types) {
+    for (const k of ['photos', 'videos']) {
+      if (Array.isArray(p.types[k])) state.types[k] = new Set(p.types[k]);
+    }
+  }
+}
+
+function activeExts() {
+  return [...state.types[state.kind]];
+}
+
+// Active stop-motion timers, keyed by item path, so we can clear on re-render.
+const frameTimers = new Map();
+
+// ---------- DOM ----------
+const $ = (id) => document.getElementById(id);
+const gridEl = $('grid');
+const viewerEl = $('viewer');
+const viewerImg = $('viewerImg');
+const viewerCaption = $('viewerCaption');
+const renameModal = $('renameModal');
+const renameInput = $('renameInput');
+const toastEl = $('toast');
+
+// ---------- Helpers ----------
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toastEl.classList.add('hidden'), 1800);
+}
+
+function clearFrameTimers() {
+  for (const t of frameTimers.values()) clearInterval(t);
+  frameTimers.clear();
+}
+
+function isModalOpen() {
+  return !renameModal.classList.contains('hidden');
+}
+
+// ---------- Loading ----------
+async function pickFolder() {
+  try {
+    if (!api || typeof api.openFolder !== 'function') {
+      throw new Error('preload bridge missing (window.api undefined)');
+    }
+    const folder = await api.openFolder();
+    if (!folder) return;
+    state.folder = folder;
+    $('folderPath').textContent = folder;
+    await loadList();
+  } catch (e) {
+    console.error('pickFolder failed:', e);
+    toast('Open folder failed: ' + e.message);
+  }
+}
+
+async function loadList() {
+  if (!state.folder) return;
+  clearFrameTimers();
+  state.items = await api.list(state.folder, {
+    exts: activeExts(),
+    recursive: state.recursive,
+    sortBy: state.sortBy,
+    sortDir: state.sortDir,
+  });
+  state.selected = 0;
+  renderGrid();
+  $('count').textContent = `${state.items.length} ${state.kind}`;
+}
+
+// ---------- Grid rendering ----------
+function renderGrid() {
+  clearFrameTimers();
+  gridEl.innerHTML = '';
+  state.items.forEach((item, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (idx === state.selected ? ' selected' : '');
+    cell.dataset.idx = String(idx);
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    // When scanning subfolders, show the relative path so duplicates are clear.
+    label.textContent = state.recursive && item.rel ? item.rel : item.name;
+    cell.title = item.path;
+
+    const img = document.createElement('img');
+    img.alt = item.name;
+
+    let isVideo = false;
+    if (state.kind === 'photos') {
+      img.src = api.toFileURL(item.path);
+      // Some formats (tiff, heic) can't be rendered by Chromium — show the ext.
+      img.addEventListener('error', () => {
+        if (cell.querySelector('.badge')) return;
+        const b = document.createElement('div');
+        b.className = 'badge';
+        b.textContent = (item.name.split('.').pop() || '').toUpperCase();
+        cell.appendChild(b);
+      });
+      cell.appendChild(img);
+    } else {
+      isVideo = true;
+      cell.classList.add('loading');
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = 'VIDEO';
+      cell.appendChild(img);
+      cell.appendChild(badge);
+    }
+
+    cell.appendChild(label);
+    cell.addEventListener('click', () => {
+      setSelected(idx);
+      if (state.kind === 'photos') openViewer();
+      else playCurrent();
+    });
+    gridEl.appendChild(cell);
+
+    // Kick off frame extraction only after the cell is in the DOM, so the
+    // isConnected guard in extractAndAnimate doesn't bail immediately.
+    if (isVideo) queueFrames(item, cell, img);
+  });
+  scrollSelectedIntoView();
+}
+
+// ---------- Video stop-motion ----------
+// Limit concurrent ffmpeg extractions.
+const MAX_CONCURRENT = 2;
+let running = 0;
+const queue = [];
+
+function queueFrames(item, cell, img) {
+  queue.push({ item, cell, img });
+  pump();
+}
+
+function pump() {
+  while (running < MAX_CONCURRENT && queue.length) {
+    const job = queue.shift();
+    running++;
+    extractAndAnimate(job).finally(() => {
+      running--;
+      pump();
+    });
+  }
+}
+
+async function extractAndAnimate({ item, cell, img }) {
+  // Cell may have been removed by a re-render; bail out if so.
+  if (!cell.isConnected) return;
+  let frames;
+  try {
+    frames = await api.videoFrames(item.path, item.mtimeMs);
+  } catch (e) {
+    cell.classList.remove('loading');
+    const lbl = cell.querySelector('.badge');
+    if (lbl) lbl.textContent = 'NO PREVIEW';
+    return;
+  }
+  if (!cell.isConnected || !frames || !frames.length) return;
+  cell.classList.remove('loading');
+
+  let i = 0;
+  img.src = api.toFileURL(frames[0]);
+  if (frames.length === 1) return;
+
+  // Each frame stays for 1s -> stop-motion / timelapse effect.
+  const timer = setInterval(() => {
+    if (!cell.isConnected) {
+      clearInterval(timer);
+      frameTimers.delete(item.path);
+      return;
+    }
+    i = (i + 1) % frames.length;
+    img.src = api.toFileURL(frames[i]);
+  }, 1000);
+  frameTimers.set(item.path, timer);
+}
+
+// ---------- Selection ----------
+function setSelected(idx) {
+  if (!state.items.length) return;
+  state.selected = Math.max(0, Math.min(idx, state.items.length - 1));
+  document.querySelectorAll('.cell').forEach((c) => {
+    c.classList.toggle('selected', Number(c.dataset.idx) === state.selected);
+  });
+  scrollSelectedIntoView();
+  if (state.fullscreen) updateViewer();
+}
+
+function move(delta) {
+  if (!state.items.length) return;
+  setSelected(state.selected + delta);
+}
+
+function scrollSelectedIntoView() {
+  const cell = gridEl.querySelector('.cell.selected');
+  if (cell) cell.scrollIntoView({ block: 'nearest' });
+}
+
+// ---------- Fullscreen viewer (photos only) ----------
+function openViewer() {
+  if (state.kind !== 'photos' || !state.items.length) return;
+  state.fullscreen = true;
+  viewerEl.classList.remove('hidden');
+  updateViewer();
+}
+
+function closeViewer() {
+  state.fullscreen = false;
+  viewerEl.classList.add('hidden');
+}
+
+// Play the selected video in the system's default player (Chromium can't
+// decode avi/mpg/mkv, so we hand off to the OS).
+async function playCurrent() {
+  const item = state.items[state.selected];
+  if (!item) return;
+  try {
+    await api.openExternal(item.path);
+  } catch (e) {
+    toast('Cannot open video: ' + e.message);
+  }
+}
+
+// Open the selected file in a specific external editor (GIMP / Shotcut).
+async function openWithApp(app) {
+  const item = state.items[state.selected];
+  if (!item) return;
+  const label = app === 'gimp' ? 'GIMP' : 'Shotcut';
+  try {
+    await api.openWith(item.path, app);
+    toast(`Opening in ${label}…`);
+  } catch (e) {
+    toast(`Cannot open in ${label}: ${e.message}`);
+  }
+}
+
+function updateViewer() {
+  const item = state.items[state.selected];
+  if (!item) return closeViewer();
+  resetZoom();
+  viewerImg.src = api.toFileURL(item.path);
+  viewerCaption.textContent = `${item.name}  ·  ${state.selected + 1}/${state.items.length}`;
+}
+
+// ---------- Zoom & pan in the fullscreen viewer ----------
+// transform-origin is 0 0 (set in CSS); we track scale + pixel translation and
+// keep the point under the cursor fixed while zooming.
+const zoom = { scale: 1, tx: 0, ty: 0, baseLeft: 0, baseTop: 0, baseW: 0, baseH: 0, measured: false };
+const ZOOM_MAX = 8;
+
+function applyZoom() {
+  viewerImg.style.transform = `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`;
+  viewerImg.style.cursor = zoom.scale > 1 ? 'grab' : 'default';
+}
+
+function resetZoom() {
+  zoom.scale = 1;
+  zoom.tx = 0;
+  zoom.ty = 0;
+  zoom.measured = false;
+  applyZoom();
+}
+
+// Record the image's fit-to-screen rect (valid only at scale 1, no translate).
+function measureBase() {
+  const r = viewerImg.getBoundingClientRect();
+  if (r.width > 0) {
+    zoom.baseLeft = r.left;
+    zoom.baseTop = r.top;
+    zoom.baseW = r.width;
+    zoom.baseH = r.height;
+    zoom.measured = true;
+  }
+}
+
+function zoomAt(cx, cy, factor) {
+  if (!zoom.measured) {
+    measureBase();
+    if (!zoom.measured) return;
+  }
+  const cur = viewerImg.getBoundingClientRect();
+  const fx = (cx - cur.left) / cur.width; // fraction of image under cursor
+  const fy = (cy - cur.top) / cur.height;
+  const newScale = Math.min(ZOOM_MAX, Math.max(1, zoom.scale * factor));
+  const newW = zoom.baseW * newScale;
+  const newH = zoom.baseH * newScale;
+  zoom.scale = newScale;
+  if (newScale === 1) {
+    zoom.tx = 0;
+    zoom.ty = 0;
+  } else {
+    zoom.tx = cx - fx * newW - zoom.baseLeft;
+    zoom.ty = cy - fy * newH - zoom.baseTop;
+  }
+  applyZoom();
+}
+
+// Size the viewer image to the window. With "Maximize" on, scale up to the
+// largest size that fits (aspect ratio preserved); otherwise never exceed
+// native size. The element is sized to the image itself (no letterbox), which
+// keeps the cursor-anchored zoom math correct.
+function applyFit() {
+  const nw = viewerImg.naturalWidth;
+  const nh = viewerImg.naturalHeight;
+  if (!nw || !nh) return;
+  let s = Math.min(window.innerWidth / nw, window.innerHeight / nh);
+  if (!state.maximize) s = Math.min(s, 1);
+  viewerImg.style.width = Math.round(nw * s) + 'px';
+  viewerImg.style.height = Math.round(nh * s) + 'px';
+}
+
+function refitViewer() {
+  applyFit();
+  resetZoom();
+  measureBase();
+}
+
+viewerImg.addEventListener('load', refitViewer);
+window.addEventListener('resize', () => {
+  if (state.fullscreen) refitViewer();
+});
+
+// Wheel / trackpad-pinch (pinch arrives as ctrl+wheel) zooms toward the cursor.
+viewerEl.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+    const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
+    zoomAt(e.clientX, e.clientY, factor);
+  },
+  { passive: false }
+);
+
+// Drag to pan when zoomed in.
+let panning = false;
+let panStartX = 0;
+let panStartY = 0;
+let panOrigX = 0;
+let panOrigY = 0;
+let dragMoved = false;
+
+viewerImg.addEventListener('mousedown', (e) => {
+  if (zoom.scale <= 1) return;
+  panning = true;
+  dragMoved = false;
+  panStartX = e.clientX;
+  panStartY = e.clientY;
+  panOrigX = zoom.tx;
+  panOrigY = zoom.ty;
+  viewerImg.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!panning) return;
+  zoom.tx = panOrigX + (e.clientX - panStartX);
+  zoom.ty = panOrigY + (e.clientY - panStartY);
+  if (Math.abs(e.clientX - panStartX) + Math.abs(e.clientY - panStartY) > 3) dragMoved = true;
+  applyZoom();
+});
+
+window.addEventListener('mouseup', () => {
+  if (!panning) return;
+  panning = false;
+  viewerImg.style.cursor = zoom.scale > 1 ? 'grab' : 'default';
+});
+
+// Double-click resets to fit.
+viewerImg.addEventListener('dblclick', (e) => {
+  e.preventDefault();
+  resetZoom();
+});
+
+// ---------- Trash ----------
+async function trashCurrent() {
+  const item = state.items[state.selected];
+  if (!item) return;
+  try {
+    await api.trash(item.path);
+  } catch (e) {
+    toast('Trash failed: ' + e.message);
+    return;
+  }
+  const t = frameTimers.get(item.path);
+  if (t) {
+    clearInterval(t);
+    frameTimers.delete(item.path);
+  }
+  state.items.splice(state.selected, 1);
+  toast(`Trashed ${item.name}`);
+  $('count').textContent = `${state.items.length} ${state.kind}`;
+
+  if (!state.items.length) {
+    closeViewer();
+    renderGrid();
+    return;
+  }
+  if (state.selected >= state.items.length) state.selected = state.items.length - 1;
+  renderGrid();
+  if (state.fullscreen) updateViewer();
+}
+
+// ---------- Rename ----------
+function openRename() {
+  const item = state.items[state.selected];
+  if (!item) return;
+  renameModal.classList.remove('hidden');
+  renameInput.value = item.name;
+  renameInput.focus();
+  // Select the base name (without extension) for quick editing.
+  const dot = item.name.lastIndexOf('.');
+  renameInput.setSelectionRange(0, dot > 0 ? dot : item.name.length);
+}
+
+function closeRename() {
+  renameModal.classList.add('hidden');
+}
+
+async function confirmRename() {
+  const item = state.items[state.selected];
+  if (!item) return closeRename();
+  const newName = renameInput.value;
+  closeRename();
+  if (!newName || newName === item.name) return;
+  try {
+    const newPath = await api.rename(item.path, newName);
+    item.path = newPath;
+    item.name = newPath.split(/[/\\]/).pop();
+    toast(`Renamed to ${item.name}`);
+    renderGrid();
+    if (state.fullscreen) updateViewer();
+  } catch (e) {
+    toast('Rename failed: ' + e.message);
+  }
+}
+
+// ---------- Tabs ----------
+function setKind(kind) {
+  if (state.kind === kind) return;
+  state.kind = kind;
+  closeViewer();
+  $('tabPhotos').classList.toggle('active', kind === 'photos');
+  $('tabVideos').classList.toggle('active', kind === 'videos');
+  buildTypesPopover(); // type list is per-mode
+  loadList();
+}
+
+// ---------- File-type popover ----------
+const typesBtn = $('typesBtn');
+const typesPopover = $('typesPopover');
+
+function buildTypesPopover() {
+  const set = TYPE_SETS[state.kind];
+  const enabled = state.types[state.kind];
+  const row = (ext, extra) =>
+    `<label class="chk"><input type="checkbox" data-ext="${ext}"${enabled.has(ext) ? ' checked' : ''}> .${ext}${
+      extra ? ' <span class="muted">extra</span>' : ''
+    }</label>`;
+  typesPopover.innerHTML =
+    '<div class="pop-title">Default</div>' +
+    set.default.map((e) => row(e, false)).join('') +
+    '<div class="pop-title">Other types</div>' +
+    set.extra.map((e) => row(e, true)).join('');
+  typesPopover.querySelectorAll('input[data-ext]').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) enabled.add(cb.dataset.ext);
+      else enabled.delete(cb.dataset.ext);
+      savePrefs();
+      loadList();
+    });
+  });
+}
+
+// ---------- Events ----------
+$('pickBtn').addEventListener('click', pickFolder);
+$('tabPhotos').addEventListener('click', () => setKind('photos'));
+$('tabVideos').addEventListener('click', () => setKind('videos'));
+
+// Sort field / direction
+$('sortBy').addEventListener('change', (e) => {
+  state.sortBy = e.target.value;
+  savePrefs();
+  loadList();
+});
+$('sortDir').addEventListener('click', () => {
+  state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  $('sortDir').textContent = state.sortDir === 'asc' ? '↑' : '↓';
+  savePrefs();
+  loadList();
+});
+
+// Subfolders
+$('recursive').addEventListener('change', (e) => {
+  state.recursive = e.target.checked;
+  savePrefs();
+  loadList();
+});
+
+// Maximize photos in fullscreen
+$('maximize').addEventListener('change', (e) => {
+  state.maximize = e.target.checked;
+  savePrefs();
+  if (state.fullscreen) refitViewer();
+});
+
+// Types popover open/close
+typesBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  typesPopover.classList.toggle('hidden');
+});
+typesPopover.addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', () => typesPopover.classList.add('hidden'));
+$('renameCancel').addEventListener('click', closeRename);
+$('renameOk').addEventListener('click', confirmRename);
+
+// Click the black background to close — but not after a pan drag, and not when
+// clicking the image itself.
+viewerEl.addEventListener('click', (e) => {
+  if (e.target === viewerEl && !dragMoved) closeViewer();
+});
+
+// ---------- Grid thumbnail sizing (trackpad pinch = ctrl+wheel) ----------
+const TILE_KEY = 'tileSize';
+const TILE_MIN = 110;
+const TILE_MAX = 480;
+
+function setTile(px) {
+  const v = Math.min(TILE_MAX, Math.max(TILE_MIN, Math.round(px)));
+  document.documentElement.style.setProperty('--tile', v + 'px');
+  try {
+    localStorage.setItem(TILE_KEY, String(v));
+  } catch {}
+}
+
+(function initTile() {
+  let saved = 0;
+  try {
+    saved = parseInt(localStorage.getItem(TILE_KEY) || '', 10);
+  } catch {}
+  if (saved) setTile(saved);
+})();
+
+gridEl.addEventListener(
+  'wheel',
+  (e) => {
+    if (!e.ctrlKey) return; // plain two-finger scroll keeps scrolling the grid
+    e.preventDefault();
+    const cur =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tile')) || 200;
+    setTile(cur * Math.exp(-e.deltaY * 0.01));
+  },
+  { passive: false }
+);
+
+renameInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') confirmRename();
+  else if (e.key === 'Escape') closeRename();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (isModalOpen()) return; // modal handles its own keys
+  // Don't hijack keys while a form control (sort menu, checkboxes) is focused.
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  switch (e.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      e.preventDefault();
+      move(1);
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      e.preventDefault();
+      move(-1);
+      break;
+    case 'Enter':
+      if (state.fullscreen) break;
+      if (state.kind === 'photos') openViewer();
+      else playCurrent();
+      break;
+    case 'Escape':
+      if (state.fullscreen) closeViewer();
+      break;
+    case '0':
+      if (state.fullscreen) resetZoom();
+      break;
+    case 'x':
+    case 'X':
+      trashCurrent();
+      break;
+    case 'r':
+    case 'R':
+      e.preventDefault();
+      openRename();
+      break;
+    case 'g':
+    case 'G':
+      if (state.kind === 'photos') openWithApp('gimp');
+      break;
+    case 's':
+    case 'S':
+      if (state.kind === 'videos') openWithApp('shotcut');
+      break;
+  }
+});
+
+// ---------- Init ----------
+loadPrefs();
+$('sortBy').value = state.sortBy;
+$('sortDir').textContent = state.sortDir === 'asc' ? '↑' : '↓';
+$('recursive').checked = state.recursive;
+$('maximize').checked = state.maximize;
+buildTypesPopover();
+})();

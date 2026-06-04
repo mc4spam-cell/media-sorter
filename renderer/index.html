@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' file: data:; media-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    />
+    <title>Media Sorter</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header id="topbar">
+      <button id="pickBtn">📁 Open folder…</button>
+      <div class="tabs">
+        <button id="tabPhotos" class="tab active">Photos</button>
+        <button id="tabVideos" class="tab">Videos</button>
+      </div>
+
+      <div class="controls">
+        <label class="ctl">
+          Sort
+          <select id="sortBy">
+            <option value="name">Name</option>
+            <option value="mtime">Date modified</option>
+          </select>
+        </label>
+        <button id="sortDir" class="iconbtn" title="Sort direction">↑</button>
+
+        <label class="chk"><input type="checkbox" id="recursive" /> Subfolders</label>
+        <label class="chk" title="Always enlarge photos to fill the window in fullscreen (aspect ratio kept)"><input type="checkbox" id="maximize" /> Maximize</label>
+
+        <div class="types-wrap">
+          <button id="typesBtn" class="iconbtn">Types ▾</button>
+          <div id="typesPopover" class="popover hidden"></div>
+        </div>
+      </div>
+
+      <div id="folderPath" class="path">No folder selected</div>
+      <div id="count" class="count"></div>
+    </header>
+
+    <main id="grid" class="grid"></main>
+
+    <!-- Fullscreen photo viewer -->
+    <div id="viewer" class="viewer hidden">
+      <img id="viewerImg" alt="" />
+      <div id="viewerCaption" class="caption"></div>
+    </div>
+
+    <!-- Rename modal -->
+    <div id="renameModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-title">Rename file</div>
+        <input id="renameInput" type="text" spellcheck="false" />
+        <div class="modal-actions">
+          <button id="renameCancel">Cancel</button>
+          <button id="renameOk" class="primary">Rename</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <footer id="help" class="help">
+      <span>← → navigate</span>
+      <span><b>Enter</b> fullscreen</span>
+      <span><b>Esc</b> back</span>
+      <span><b>X</b> trash</span>
+      <span><b>R</b> rename</span>
+      <span><b>G</b> open in GIMP (photos)</span>
+      <span><b>S</b> open in Shotcut (videos)</span>
+    </footer>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
