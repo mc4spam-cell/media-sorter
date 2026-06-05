@@ -133,8 +133,67 @@ ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
   return target;
 });
 
+// ---------- External launch helpers ----------
+// When the app runs as an AppImage, its runtime injects LD_LIBRARY_PATH and
+// various plugin paths pointing at Electron's bundled libraries. A child GUI
+// app (VLC, GIMP, Shotcut…) would inherit those and load incompatible libs —
+// causing misplaced windows, frozen UIs and crashes. Strip them so children
+// launch with a clean, system environment. AppRun saves originals as *_ORIG.
+const LOADER_VARS = [
+  'LD_LIBRARY_PATH', 'LD_PRELOAD',
+  'GTK_PATH', 'GTK_IM_MODULE_FILE',
+  'GDK_PIXBUF_MODULE_FILE', 'GDK_PIXBUF_MODULEDIR',
+  'GIO_MODULE_DIR', 'GIO_EXTRA_MODULES',
+  'QT_PLUGIN_PATH', 'QT_QPA_PLATFORM_PLUGIN_PATH', 'QTWEBENGINEPROCESS_PATH',
+  'FONTCONFIG_FILE', 'FONTCONFIG_PATH',
+  'GSETTINGS_SCHEMA_DIR',
+  'GST_PLUGIN_SYSTEM_PATH', 'GST_PLUGIN_SYSTEM_PATH_1_0', 'GST_PLUGIN_PATH', 'GST_PLUGIN_PATH_1_0',
+  'PYTHONPATH', 'PYTHONHOME', 'PERLLIB',
+];
+const RESTORE_VARS = ['LD_LIBRARY_PATH', 'XDG_DATA_DIRS', 'XDG_CONFIG_DIRS'];
+
+function childEnv() {
+  const env = { ...process.env };
+  for (const k of LOADER_VARS) {
+    const orig = env[k + '_ORIG'];
+    if (orig != null && orig !== '') env[k] = orig;
+    else delete env[k];
+  }
+  // Restore values the AppImage runtime saved before modifying them.
+  for (const k of RESTORE_VARS) {
+    const orig = env[k + '_ORIG'];
+    if (orig != null) env[k] = orig;
+  }
+  delete env.CHROME_DESKTOP;
+  return env;
+}
+
+// Launch a GUI program fully detached (own session) with a clean environment.
+function spawnDetached(cmd, args, label) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const p = spawn(cmd, args, { detached: true, stdio: 'ignore', env: childEnv() });
+    p.on('error', (e) => {
+      if (settled) return;
+      settled = true;
+      reject(e.code === 'ENOENT' ? new Error(`${label || cmd} is not installed`) : e);
+    });
+    p.on('spawn', () => {
+      if (settled) return;
+      settled = true;
+      p.unref();
+      resolve(true);
+    });
+  });
+}
+
 // ---------- IPC: open in system default player ----------
 ipcMain.handle('file:open', async (_e, filePath) => {
+  if (process.platform === 'linux') {
+    // Use xdg-open with a sanitized env (see childEnv) instead of shell.openPath,
+    // which would hand the AppImage's polluted env to the default player.
+    return spawnDetached('xdg-open', [filePath], 'the default video player');
+  }
   const err = await shell.openPath(filePath); // '' on success
   if (err) throw new Error(err);
   return true;
@@ -164,22 +223,8 @@ ipcMain.handle('file:openWith', async (_e, filePath, appKey) => {
     });
   }
 
-  // Linux / other: launch the GUI binary detached (it keeps running).
-  return await new Promise((resolve, reject) => {
-    let settled = false;
-    const p = spawn(spec.linux, [filePath], { detached: true, stdio: 'ignore' });
-    p.on('error', (e) => {
-      if (settled) return;
-      settled = true;
-      reject(e.code === 'ENOENT' ? new Error(`${spec.label} is not installed`) : e);
-    });
-    p.on('spawn', () => {
-      if (settled) return;
-      settled = true;
-      p.unref();
-      resolve(true);
-    });
-  });
+  // Linux / other: launch the GUI binary detached with a clean environment.
+  return spawnDetached(spec.linux, [filePath], spec.label);
 });
 
 // ---------- IPC: extract video frames (stop-motion) ----------
