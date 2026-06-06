@@ -1,6 +1,6 @@
 {
   "name": "media-sorter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sort photos and videos with thumbnail/fullscreen views, keyboard navigation, trash and rename.",
   "main": "main.js",
   "scripts": {
@@ -22,13 +22,23 @@
     "appId": "com.mc.mediasorter",
     "productName": "Media Sorter",
     "asar": false,
-    "files": ["main.js", "preload.js", "renderer/**/*", "package.json"],
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Graphics"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "category": "public.app-category.photography"
     }
   }
