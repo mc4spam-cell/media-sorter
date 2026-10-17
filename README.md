@@ -13,12 +13,13 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 - **Thumbnail grid** only.
 - Each thumbnail is an animated **stop-motion / timelapse**: one frame is taken every **60 s** of the video, and each frame is shown for **1 s**, looping.
 - Frames are extracted with a bundled `ffmpeg` (no system install needed) and cached, so a folder is fast to reopen.
+- Click a thumbnail (or press **Enter**) to **play the video in your system's default player** — Chromium can't decode avi/mpg/mkv, so playback is handed off to the OS (`xdg-open` on Linux, the default app on macOS).
 
 ### Keyboard (both modes)
 | Key | Action |
 |-----|--------|
 | ← → (also ↑ ↓) | previous / next |
-| **Enter** | open fullscreen (photos) |
+| **Enter** | open fullscreen (photos) / play in system player (videos) |
 | **Esc** | leave fullscreen |
 | **X** | send the current file to the OS trash |
 | **R** | rename the current file (a dialog is proposed) |
@@ -31,7 +32,7 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 ### Browsing controls (toolbar)
 - **Sort** by **Name** or **Date modified**, with an **↑/↓** button to flip ascending/descending.
 - **Subfolders** checkbox — when on, the folder is scanned recursively and each tile shows its path relative to the chosen folder.
-- **Types ▾** menu — per-mode checkboxes to include/exclude file extensions. Defaults are jpg/jpeg/png/webp (photos) and avi/mpg/mpeg/mkv (videos); a set of extra formats (gif, bmp, avif, tiff, heic / mp4, mov, m4v, webm, wmv, flv, 3gp) can be toggled on. Formats Chromium can't render (e.g. tiff, heic) still list and sort, showing the extension instead of a preview.
+- **Types ▾** menu — per-mode checkboxes to include/exclude file extensions. Defaults are jpg/jpeg/png/webp (photos) and avi/mpg/mpeg/mkv (videos); a set of extra formats (gif, bmp, avif, tiff, tif, heic / mp4, mov, m4v, webm, wmv, flv, 3gp) can be toggled on. Formats Chromium can't render (e.g. tiff, tif, heic) still list and sort, showing the extension instead of a preview.
 - All of the above — plus the thumbnail size — are **remembered** between launches.
 
 ### Zoom (trackpad)
