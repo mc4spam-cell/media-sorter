@@ -4,6 +4,20 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.1.0] — 2026-10-17
+
+### Added
+- **Keyboard-shortcuts button.** An ⓘ button in the toolbar opens a dialog
+  listing every shortcut; the always-on help footer is gone. Global keys are
+  ignored while the dialog is open (Esc closes it).
+- **Open a file from the OS "Open with".** Launching Media Sorter on an image
+  (file association / right-click → Open with) loads the image's parent folder
+  as the working folder, switches to the matching Photos/Videos mode, selects the
+  file and opens the fullscreen viewer, so ←/→ walk the folder. Works on both
+  macOS (`open-file` event) and Linux (command-line argument, including `file://`
+  URIs). Image `fileAssociations` are declared so the entry registers on install
+  (the Linux `.deb` registers it; the AppImage does not).
+
 ## [1.0.1] — 2026-06-06
 
 ### Fixed
@@ -44,5 +58,6 @@ and videos.
 - macOS `.dmg` and Linux `.AppImage` + `.deb` via electron-builder.
 - Bundled `ffmpeg` (ffmpeg-static); OS trash via the `trash` package.
 
+[1.1.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0
 [1.0.1]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.0.1
 [1.0.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.0.0
