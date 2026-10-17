@@ -157,17 +157,25 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 
 Les trois tags existent dans le dépôt (`git tag -l`). Le commit `889e4a2` est intitulé « Release 1.1.0 ».
 
-### 5.3 Procédure de sortie (déduite de l'historique)
+### 5.3 Procédure de sortie
 
-Le dépôt ne contient pas de script de release. La procédure suivante est **déduite** des commits et du CHANGELOG :
+**Préparer** (une fois, sur n'importe quelle machine) :
 
 1. Mettre à jour la version dans `package.json`.
-2. Ajouter la section de version et sa date dans `CHANGELOG.md`, ainsi que le lien de release en bas de fichier.
-3. Lancer `npm run dist:linux` (sous Linux) et `npm run dist:mac` (sous macOS).
-4. Créer le tag `vX.Y.Z` et publier les artefacts sur GitHub Releases (`https://github.com/mc4spam-cell/media-sorter/releases/tag/vX.Y.Z`).
-5. Les dmg mac étant construits sur la machine correspondant à l'architecture, le build arm64 et le build intel proviennent de machines distinctes ; les uploader tous deux, plus le `.deb` Linux.
+2. Ajouter la section de version et sa date dans `CHANGELOG.md`, plus le lien de release en bas de fichier.
+3. Committer et pousser.
 
-**Vérifié (2026-10-17)** : les trois artefacts 1.1.0 sont bien présents sur GitHub Releases (`arm64.dmg`, `intel.dmg`, `amd64.deb` — voir §4.3). Le renommage `-intel`/`-arm64` est manuel à l'upload (le nommage automatique via `${arch}` n'est effectif que depuis le commit `8048843`, postérieur à cette release).
+**Publier les artefacts** — trois scripts, un par architecture (ajoutés le 2026-10-17, dans `scripts/`) :
+
+| Script | À lancer sur | Produit et publie |
+|---|---|---|
+| `scripts/release-mac-x64.sh` | n'importe quel Mac | `Media Sorter-<v>-x64.dmg` |
+| `scripts/release-mac-arm64.sh` | n'importe quel Mac | `Media Sorter-<v>-arm64.dmg` |
+| `scripts/release-linux.sh` | **Linux** (ffmpeg par plateforme) | `media-sorter_<v>_amd64.deb` + `.AppImage` |
+
+Chaque script (via `scripts/release-lib.sh`) : vérifie `gh` + l'authentification, exige un arbre propre et `npm install` fait, lit la version, **crée et pousse le tag `vX.Y.Z`** s'il manque (avec confirmation), **crée la release GitHub** si absente, construit son architecture puis **téléverse** ses artefacts (`gh release upload --clobber`). Les scripts sont idempotents : lancez-les dans n'importe quel ordre sur les machines voulues ; le premier crée tag + release, les suivants ne font qu'ajouter leurs fichiers. Les deux scripts mac forcent `--x64` / `--arm64`, donc tous deux peuvent tourner sur **un seul** Mac (electron-builder cross-compile) ; seul le `.deb`/AppImage doit être bâti sous Linux.
+
+Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, commit `8048843`). La release 1.1.0 publiée **avant** ces scripts porte encore des suffixes `-intel`/`-arm64` posés manuellement (voir §4.3).
 
 ### 5.4 Mise à jour automatique
 
