@@ -55,7 +55,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | 15 | ~~Réponses de listage concurrentes~~ — **résolu (2026-10-17)** | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Jeton de requête (`listSeq`) sur `loadList` : une réponse obsolète est ignorée au lieu d'écraser la liste. `try/catch` ajouté. |
 | 16 | ~~Chemins non restreints côté processus principal~~ — **durci (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `file:trash/rename/open/openWith` valident que la cible est un fichier régulier existant (`assertRegularFile`). Pas de restriction au dossier choisi (volontaire : « Ouvrir avec » + multi-dossiers) ; renderer local de confiance. |
 | 17 | ~~Sandbox du renderer non explicite~~ — **résolu (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `sandbox: true` déclaré explicitement dans les `webPreferences`, pour ne plus dépendre du défaut d'Electron. Preload compatible (contextBridge/ipcRenderer). |
-| 18 | `read` et `set -e` dans le script Ubuntu | [build-and-deploy.md §3.2](build-and-deploy.md#32-installation-par-script-recommandée) | Une entrée fermée fait échouer le script au lieu de prendre la valeur par défaut. Le script est donc interactif uniquement. |
+| 18 | ~~`read` et `set -e` dans le script Ubuntu~~ — **résolu (2026-10-17)** | [build-and-deploy.md §3.2](build-and-deploy.md#32-installation-par-script-recommandée) | `read -rp … \|\| true` : une entrée fermée ne tue plus le script sous `set -e` ; la valeur par défaut s'applique (N éditeurs, Y pour le `.deb`). |
 
 ### C. Divergences entre documentation, code et artefacts
 

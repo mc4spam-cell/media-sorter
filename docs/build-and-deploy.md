@@ -55,7 +55,7 @@ bash install-ubuntu.sh
 | 7 | **Demande** d'installer le `.deb` (réponse par défaut : oui) → `sudo apt-get install ./<deb>` puis sortie | 68-73 |
 | 8 | Sinon, affiche le chemin de l'AppImage | fin du script |
 
-Le script est **interactif** (`read -rp`, `sudo`). **[à confirmer]** : avec `set -e`, une lecture sur une entrée fermée (`read` en fin de fichier) fait échouer le script au lieu de prendre la valeur par défaut. Il n'est donc pas adapté à une exécution sans terminal.
+Le script reste **interactif** (`sudo`), mais les invites `read -rp` sont désormais suffixées de `|| true` (corrigé le 2026-10-17) : sur une entrée fermée (exécution non interactive, pipe), le `read` n'abat plus le script sous `set -e` et la valeur par défaut s'applique (N pour les éditeurs, Y pour l'installation du `.deb`).
 
 ### 3.3 Installation manuelle
 

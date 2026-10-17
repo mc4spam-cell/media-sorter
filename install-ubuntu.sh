@@ -39,7 +39,9 @@ fi
 info "Using Node $(node -v) / npm $(npm -v)"
 
 # ---- 3. optional editors (G / S shortcuts) ----------------------------------
-read -rp "Install GIMP + Shotcut for the G/S shortcuts? [y/N] " ans
+# `|| true` so a closed stdin (non-interactive run) doesn't trip `set -e`;
+# the default below (N) then applies.
+read -rp "Install GIMP + Shotcut for the G/S shortcuts? [y/N] " ans || true
 if [[ "${ans:-N}" =~ ^[Yy]$ ]]; then
   info "Installing GIMP and Shotcut…"
   sudo apt-get install -y gimp shotcut || warn "Could not install gimp/shotcut — skipping."
@@ -65,7 +67,8 @@ bold "Build complete."
 echo
 
 if [ -n "$deb" ]; then
-  read -rp "Install the .deb system-wide now (adds it to your app menu)? [Y/n] " ans2
+  # `|| true` so a closed stdin doesn't trip `set -e`; default below (Y) applies.
+  read -rp "Install the .deb system-wide now (adds it to your app menu)? [Y/n] " ans2 || true
   if [[ ! "${ans2:-Y}" =~ ^[Nn]$ ]]; then
     info "Installing $deb …"
     sudo apt-get install -y "./$deb"
