@@ -122,6 +122,8 @@ if (!gotLock) {
     // already set pendingFile via the open-file event above.
     if (!pendingFile) pendingFile = fileArgFrom(process.argv);
     createWindow();
+    // Best-effort, fire-and-forget: keep the frame cache from growing forever.
+    pruneFrameCache().catch(() => {});
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
@@ -324,6 +326,53 @@ function cacheDirFor(filePath, mtimeMs) {
   return path.join(app.getPath('userData'), 'frames', hash);
 }
 
+// Frame-cache housekeeping. The cache at userData/frames grows one dir per
+// (video path + mtime), and nothing ever removed it: a re-encoded, renamed or
+// trashed video leaves its frames behind forever. We prune on startup, evicting
+// first by age, then least-recently-used until under a size cap. A cache hit
+// bumps the dir's mtime (see the video:frames handler) so "LRU" tracks real use.
+const CACHE_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const CACHE_MAX_BYTES = 500 * 1024 * 1024; // 500 MB
+
+async function dirSize(dir) {
+  let total = 0;
+  const files = await fsp.readdir(dir).catch(() => []);
+  for (const f of files) {
+    const st = await fsp.stat(path.join(dir, f)).catch(() => null);
+    if (st && st.isFile()) total += st.size;
+  }
+  return total;
+}
+
+async function pruneFrameCache() {
+  const root = path.join(app.getPath('userData'), 'frames');
+  const names = await fsp.readdir(root).catch(() => null);
+  if (!names) return; // nothing cached yet
+
+  const now = Date.now();
+  const entries = [];
+  for (const name of names) {
+    const dir = path.join(root, name);
+    const st = await fsp.stat(dir).catch(() => null);
+    if (!st || !st.isDirectory()) continue;
+    // Evict anything untouched for longer than the max age.
+    if (now - st.mtimeMs > CACHE_MAX_AGE_MS) {
+      await fsp.rm(dir, { recursive: true, force: true }).catch(() => {});
+      continue;
+    }
+    entries.push({ dir, mtimeMs: st.mtimeMs, size: await dirSize(dir) });
+  }
+
+  // Oldest (least recently used) first, then drop until under the byte cap.
+  let total = entries.reduce((n, e) => n + e.size, 0);
+  entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
+  for (const e of entries) {
+    if (total <= CACHE_MAX_BYTES) break;
+    await fsp.rm(e.dir, { recursive: true, force: true }).catch(() => {});
+    total -= e.size;
+  }
+}
+
 // Run ffmpeg, rejecting on non-zero exit or timeout.
 function runFfmpeg(args, timeoutMs = FFMPEG_TIMEOUT_MS) {
   return new Promise((resolve, reject) => {
@@ -378,7 +427,12 @@ ipcMain.handle('video:frames', async (_e, filePath, mtimeMs) => {
   // Return cached frames if extraction already completed.
   if (fs.existsSync(doneMarker)) {
     const cached = await listFrameFiles(dir);
-    if (cached.length) return cached;
+    if (cached.length) {
+      // Bump mtime so this dir counts as recently used for cache pruning.
+      const now = new Date();
+      fsp.utimes(dir, now, now).catch(() => {});
+      return cached;
+    }
   }
 
   await fsp.mkdir(dir, { recursive: true });

@@ -433,6 +433,14 @@ window.addEventListener('mouseup', () => {
   viewerImg.style.cursor = zoom.scale > 1 ? 'grab' : 'default';
 });
 
+// A fresh press anywhere in the viewer starts a new click cycle. Without this,
+// `dragMoved` stayed true after a pan drag (it was only reset on mousedown over
+// the image, when zoomed), so a later click on the black background no longer
+// closed the viewer. Clearing it here makes background-click-to-close work again.
+viewerEl.addEventListener('mousedown', () => {
+  dragMoved = false;
+});
+
 // Double-click resets to fit.
 viewerImg.addEventListener('dblclick', (e) => {
   e.preventDefault();
