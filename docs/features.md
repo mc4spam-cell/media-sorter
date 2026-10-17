@@ -54,12 +54,12 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js:16-19`) :
 
 ### FN-04 Ordre de la liste
 - Critères : **Name** (nom de fichier) ou **Date modified** (`mtimeMs`) ; sens ascendant (↑) ou descendant (↓).
-- Le tri est effectué par le processus principal (`main.js:180-184`) :
+- Le tri est effectué par le processus principal (`main.js`) :
   - nom : `localeCompare` avec `numeric: true`, donc `img2` précède `img10` ;
   - date : tri numérique sur `mtimeMs`, du plus ancien au plus récent en ascendant.
+- **En mode sous-dossiers**, le tri par nom s'applique au **chemin relatif** (`rel`) et non au nom de fichier seul : les fichiers sont donc **regroupés par dossier** (ordre arborescent). En mode non récursif, le tri reste sur le nom de fichier. *(Depuis le 2026-10-17 ; auparavant, des homonymes de dossiers différents étaient mélangés.)*
 - Le changement de critère ou de sens recharge la liste et **remet la sélection au premier élément** (`renderer/renderer.js:132`).
 - Préférences sauvegardées : `sortBy`, `sortDir` (voir [config.md §3](config.md#3-préférences-persistées)).
-- **[à confirmer]** : en mode sous-dossiers, le tri par nom compare le **nom de fichier seul** (`a.name`), et non le chemin relatif. Des fichiers homonymes de sous-dossiers différents sont donc mélangés (`main.js:182-183`).
 
 ### FN-05 Sous-dossiers
 - Case **Subfolders** : scan récursif de toute l'arborescence (`main.js:165`).

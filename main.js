@@ -180,9 +180,12 @@ ipcMain.handle('fs:list', async (_e, folder, opts) => {
   await walk(folder);
 
   const dir = sortDir === 'desc' ? -1 : 1;
+  // In recursive mode, sort by the relative path so files group under their
+  // folder (otherwise same-named files from different folders interleave).
+  const nameKey = recursive ? 'rel' : 'name';
   out.sort((a, b) => {
     if (sortBy === 'mtime') return (a.mtimeMs - b.mtimeMs || 0) * dir;
-    return a.name.localeCompare(b.name, undefined, { numeric: true }) * dir;
+    return a[nameKey].localeCompare(b[nameKey], undefined, { numeric: true }) * dir;
   });
   return out;
 });
