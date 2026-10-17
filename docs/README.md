@@ -14,6 +14,7 @@ Ces documents sont **reconstitués à partir du code source** (`main.js`, `prelo
 | [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-19` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis |
 | [build-and-deploy.md](build-and-deploy.md) | Scripts npm, build macOS et Ubuntu, installation, versioning, publication |
 | [config.md](config.md) | Constantes, préférences persistées, formats, cache, chemins système, variables d'environnement |
+| [roadmap.md](roadmap.md) | Plan 1.2.0 : annulation (10 actions), multi-sélection, renommage en masse, déplacement/copie |
 
 Les références au code citent le **fichier** et le **symbole** concerné (fonction, constante) ; elles ne portent pas de numéro de ligne, qui dériverait à mesure que le code évolue.
 
@@ -34,7 +35,7 @@ Pistes d'amélioration non encore réalisées, par effort croissant. Optionnelle
 ## Hors périmètre actuel
 
 - Windows : aucune configuration de build ni de test.
-- Déplacement, copie et classement de fichiers.
-- Annulation des actions.
+- Déplacement, copie et classement de fichiers *(planifiés pour la 1.2.0, sauf le classement complet : voir [roadmap.md](roadmap.md))*.
+- Annulation des actions *(planifiée pour la 1.2.0)*.
 - Lecture vidéo intégrée.
 - Tests automatisés et linting.
