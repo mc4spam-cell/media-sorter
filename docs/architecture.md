@@ -206,7 +206,7 @@ Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement
 | `nodeIntegration` | `main.js:40` | désactivé |
 | Sandbox du renderer | non déclaré | **[à confirmer]** : le commentaire de `preload.js:5` indique un preload sandboxé, cohérent avec le défaut d'Electron 31, mais le réglage n'est pas explicite |
 | Lancement sans shell | `spawn(cmd, args)` dans `main.js:258`, `300`, `330`, `352` | Pas d'interpolation de chaîne dans un shell |
-| Validation des chemins | aucune | **[à confirmer]** : les canaux `fs:list`, `file:trash`, `file:rename`, `file:open` acceptent tout chemin fourni par le renderer. Risque limité car le renderer ne charge que le fichier local `index.html`, mais il n'y a pas de restriction au dossier choisi |
+| Validation des chemins | partielle (type de cible) | `file:trash`, `file:rename`, `file:open`, `file:openWith` valident désormais que la cible est un **fichier régulier existant** (`assertRegularFile`) avant d'agir — durcissement défensif ajouté le 2026-10-17. Il n'y a pas (volontairement) de restriction au dossier choisi : le flux « Ouvrir avec » et le multi-dossiers l'exigent. Le renderer reste local et de confiance (CSP `script-src 'self'`, aucune entrée distante), donc le risque restait théorique. |
 | Renommage | `main.js:199-204` | Les séparateurs `/` et `\` sont remplacés par `_` |
 
 ## 10. Contraintes et particularités

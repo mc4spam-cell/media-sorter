@@ -236,8 +236,27 @@ ipcMain.handle('fs:list', async (_e, folder, opts) => {
   return out;
 });
 
+// Defense-in-depth: the renderer is local and trusted, but still validate that
+// a mutating/opening operation targets an existing regular file before acting,
+// so a malformed or unexpected path fails fast and cleanly. stat() follows
+// symlinks, matching how fs:list decides an entry is a file.
+async function assertRegularFile(filePath, label = 'File') {
+  if (typeof filePath !== 'string' || !filePath) {
+    throw new Error(`${label}: invalid path`);
+  }
+  let st;
+  try {
+    st = await fsp.stat(filePath);
+  } catch {
+    throw new Error(`${label} not found: ${filePath}`);
+  }
+  if (!st.isFile()) throw new Error(`${label} is not a regular file: ${filePath}`);
+  return st;
+}
+
 // ---------- IPC: trash ----------
 ipcMain.handle('file:trash', async (_e, filePath) => {
+  await assertRegularFile(filePath);
   const trash = await getTrash();
   await trash(filePath);
   return true;
@@ -245,6 +264,7 @@ ipcMain.handle('file:trash', async (_e, filePath) => {
 
 // ---------- IPC: rename ----------
 ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
+  await assertRegularFile(oldPath);
   const dir = path.dirname(oldPath);
   const oldExt = path.extname(oldPath);
   let safe = newName.trim();
@@ -333,6 +353,7 @@ function spawnDetached(cmd, args, label) {
 
 // ---------- IPC: open in system default player ----------
 ipcMain.handle('file:open', async (_e, filePath) => {
+  await assertRegularFile(filePath);
   if (process.platform === 'linux') {
     // Use xdg-open with a sanitized env (see childEnv) instead of shell.openPath,
     // which would hand the AppImage's polluted env to the default player.
@@ -353,6 +374,7 @@ const EXTERNAL_APPS = {
 ipcMain.handle('file:openWith', async (_e, filePath, appKey) => {
   const spec = EXTERNAL_APPS[appKey];
   if (!spec) throw new Error('Unknown app: ' + appKey);
+  await assertRegularFile(filePath);
 
   if (process.platform === 'darwin') {
     // `open` exits quickly and returns non-zero if the app isn't installed.
