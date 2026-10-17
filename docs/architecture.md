@@ -204,7 +204,7 @@ Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement
 | Content-Security-Policy | `renderer/index.html:6-8` | `default-src 'self'` ; `img-src` et `media-src` autorisent `file:` et `data:` ; `script-src 'self'` (aucun script inline) ; `style-src 'self' 'unsafe-inline'` |
 | `contextIsolation` | `main.js:39` | activé |
 | `nodeIntegration` | `main.js:40` | désactivé |
-| Sandbox du renderer | non déclaré | **[à confirmer]** : le commentaire de `preload.js:5` indique un preload sandboxé, cohérent avec le défaut d'Electron 31, mais le réglage n'est pas explicite |
+| Sandbox du renderer | **`sandbox: true` explicite** | Déclaré dans les `webPreferences` (`main.js`, ajouté le 2026-10-17) au lieu de dépendre du défaut d'Electron, pour verrouiller la posture à travers les futures montées de version. Le preload n'utilise que `contextBridge`/`ipcRenderer`, compatibles sandbox (`preload.js:5`). |
 | Lancement sans shell | `spawn(cmd, args)` dans `main.js:258`, `300`, `330`, `352` | Pas d'interpolation de chaîne dans un shell |
 | Validation des chemins | partielle (type de cible) | `file:trash`, `file:rename`, `file:open`, `file:openWith` valident désormais que la cible est un **fichier régulier existant** (`assertRegularFile`) avant d'agir — durcissement défensif ajouté le 2026-10-17. Il n'y a pas (volontairement) de restriction au dossier choisi : le flux « Ouvrir avec » et le multi-dossiers l'exigent. Le renderer reste local et de confiance (CSP `script-src 'self'`, aucune entrée distante), donc le risque restait théorique. |
 | Renommage | `main.js:199-204` | Les séparateurs `/` et `\` sont remplacés par `_` |

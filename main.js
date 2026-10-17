@@ -38,6 +38,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Declared explicitly (not just relying on Electron's default) so the
+      // renderer stays sandboxed across Electron upgrades. The preload only
+      // uses electron's contextBridge/ipcRenderer, which work when sandboxed.
+      sandbox: true,
     },
   });
   mainWindow = win;
