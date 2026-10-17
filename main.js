@@ -200,13 +200,23 @@ ipcMain.handle('file:trash', async (_e, filePath) => {
 // ---------- IPC: rename ----------
 ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
   const dir = path.dirname(oldPath);
-  // Keep the original extension if the user didn't type one.
   const oldExt = path.extname(oldPath);
   let safe = newName.trim();
   if (!safe) throw new Error('Empty name');
   // Strip any path separators the user may have typed.
   safe = safe.replace(/[/\\]/g, '_');
-  if (!path.extname(safe)) safe += oldExt;
+  // Always keep the original extension. We append it unless the typed name
+  // already ends with it (case-insensitive, then normalized to oldExt). The
+  // whole typed string is otherwise the base name, so a descriptive dot
+  // (e.g. "budget.2024") is no longer mistaken for an extension and can't
+  // drop the real one. A file that had no extension keeps the name as typed.
+  if (oldExt) {
+    if (safe.toLowerCase().endsWith(oldExt.toLowerCase())) {
+      safe = safe.slice(0, safe.length - oldExt.length) + oldExt;
+    } else {
+      safe += oldExt;
+    }
+  }
   let target = path.join(dir, safe);
   if (target === oldPath) return oldPath;
   // Avoid clobbering an existing file: append " (n)".

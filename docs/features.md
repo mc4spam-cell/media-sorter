@@ -144,15 +144,14 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:3
 ### FN-13 Renommage (touche R)
 - Une fenêtre modale « Rename file » s'ouvre, pré-remplie avec le nom complet. La partie avant le **dernier point** est présélectionnée, pour ne modifier que le nom de base (`renderer/renderer.js:472-481`).
 - **Entrée** valide, **Échap** annule, ou boutons « Cancel » / « Rename ». Un clic à l'extérieur ne ferme pas la fenêtre.
-- Règles appliquées par le processus principal (`main.js:196-217`) :
+- Règles appliquées par le processus principal (`main.js`) :
   - la saisie est nettoyée ; un nom vide provoque l'erreur « Empty name » ;
   - les séparateurs `/` et `\` sont remplacés par `_` (pas de déplacement involontaire) ;
-  - si le nom saisi n'a **pas** d'extension, l'extension d'origine est ajoutée. Une extension saisie est conservée telle quelle ;
+  - **l'extension d'origine est toujours conservée** : elle est ajoutée sauf si le nom saisi se termine déjà par elle (comparaison insensible à la casse, puis casse normalisée sur l'extension d'origine). Le texte saisi est donc traité comme le **nom de base**, si bien qu'un point décoratif (`budget.2024` → `budget.2024.jpg`) n'écrase plus l'extension réelle. On ne peut donc plus changer l'extension via le renommage ; un fichier sans extension garde le nom tel quel. *(Depuis le 2026-10-17.)*
   - si le nom cible existe déjà, un suffixe ` (1)`, ` (2)`… est ajouté avant l'extension ;
   - un nom identique à l'original ne fait rien.
 - Après succès : message « Renamed to <nouveau nom> », rechargement de la grille (les frames vidéo sont recalculées car la clé de cache dépend du chemin).
 - En cas d'échec : message « Rename failed: … ».
-- **[à confirmer]** : un nom contenant un point (ex. `vacances.2026`) est considéré comme ayant déjà une extension, et l'extension d'origine n'est donc pas ajoutée.
 
 ### FN-14 Éditeurs externes
 | Touche | Mode | Application | macOS | Linux |
