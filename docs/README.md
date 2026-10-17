@@ -34,7 +34,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | # | Sujet | Où | Question |
 |---|---|---|---|
 | 1 | Suppression sans confirmation | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | La touche X met à la corbeille immédiatement, sans confirmation ni annulation. Voulu ? |
-| 2 | Modificateurs ignorés | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`, `Cmd+G`… déclenchent les mêmes actions que les touches seules. Voulu ? |
+| 2 | ~~Modificateurs ignorés~~ — **validé : voulu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`… déclenchent la même action que la touche seule, **volontairement** : robustesse quand les affectations `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (VM, macOS vs Linux natif). |
 | 3 | Vignette vidéo sans image | [features.md FN-07](features.md#5-vignettes-grille) | Si aucune image n'est extraite, la vignette reste en état de chargement indéfiniment, sans « NO PREVIEW ». Comportement attendu ? |
 | 4 | Vidéos longues | [features.md FN-07](features.md#5-vignettes-grille) | Au plus 20 images, espacées de 60 s : seules les ~19 premières minutes sont représentées. Voulu ? |
 | 5 | Tri par nom en sous-dossiers | [features.md FN-04](features.md#4-tri) | Le tri compare le nom de fichier seul, pas le chemin relatif. Des homonymes de dossiers différents sont mélangés. Voulu ? |

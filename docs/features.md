@@ -215,8 +215,9 @@ Règles de garde (`renderer/renderer.js:696-703`) :
 - Si la fenêtre de renommage est ouverte, le gestionnaire global ne fait rien.
 - Si le focus est dans un champ `INPUT`, `SELECT` ou `TEXTAREA` (liste de tri, cases à cocher du menu Types), les touches ne sont pas interceptées.
 
+**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement.
+
 **[à confirmer]** :
-- Les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`). Ainsi `Cmd+X` ou `Ctrl+R` déclenchent la même action que `X` ou `R`. Voulu ?
 - Après une modification de la liste « Sort », le focus reste sur ce champ et les flèches agissent sur la liste déroulante, pas sur la grille, tant qu'on ne clique pas sur la grille. À valider.
 - Le README indique « Esc back » ; en mode grille, Échap ne fait rien, ce qui est cohérent avec le code.
 
