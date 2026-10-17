@@ -48,7 +48,8 @@
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.photography"
+      "category": "public.app-category.photography",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
   }
 }
