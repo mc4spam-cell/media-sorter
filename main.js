@@ -55,12 +55,29 @@ function createWindow() {
   });
 }
 
+// Some file managers launch the .desktop entry (Exec ... %U) with a file:// URI
+// rather than a plain path. Convert those back to a filesystem path.
+function argToPath(a) {
+  if (!a.startsWith('file://')) return a;
+  try {
+    let rest = a.slice('file://'.length); // '/home/x' or 'host/home/x'
+    const slash = rest.indexOf('/');
+    if (slash > 0) rest = rest.slice(slash); // drop an optional host part
+    return decodeURIComponent(rest);
+  } catch {
+    return null;
+  }
+}
+
 // Find the first CLI argument that is an existing file — the path a file manager
 // passes when launching via "Open with". Skips the executable, the "." dev arg
-// and any --flags. Returns an absolute path, or null.
+// and any --flags; accepts both plain paths and file:// URIs. Returns an absolute
+// path, or null.
 function fileArgFrom(argv) {
-  for (const a of (argv || []).slice(1)) {
-    if (!a || a.startsWith('-')) continue;
+  for (const raw of (argv || []).slice(1)) {
+    if (!raw || raw.startsWith('-')) continue;
+    const a = argToPath(raw);
+    if (!a) continue;
     try {
       if (fs.statSync(a).isFile()) return path.resolve(a);
     } catch {}
