@@ -87,13 +87,12 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:3
 **Lecture** :
 - La première image est affichée, puis les images défilent en boucle, **une par seconde** (`renderer/renderer.js:234-242`).
 - Les vignettes sont calculées **au plus 2 à la fois** (`renderer/renderer.js:194`).
-- Le badge « VIDEO » est affiché sur chaque vignette vidéo (`renderer/renderer.js:170-172`) ; la classe `loading` est retirée à réception des images.
-- En cas d'erreur IPC, le badge devient « NO PREVIEW » (`renderer/renderer.js:220-224`).
+- Le badge « VIDEO » est affiché sur chaque vignette vidéo ; la classe `loading` est retirée à réception des images.
+- Quand l'extraction **n'aboutit à aucune image** — qu'elle lève une erreur IPC **ou** qu'elle renvoie une liste vide (fichier corrompu, codec non géré par le ffmpeg embarqué, vidéo vide) — le badge devient **« NO PREVIEW »** et le spinner s'arrête, via le helper `markNoPreview` (`renderer/renderer.js`). *(Résolu le 2026-10-17 ; auparavant le cas « 0 image sans erreur » laissait la vignette en chargement indéfini.)*
 
 **Cache** : les images extraites sont conservées sur disque ; voir [config.md §4](config.md#4-cache-des-images-vidéo).
 
 **[à confirmer]** :
-- Si l'extraction réussit mais ne renvoie aucune image (ffmpeg absent, fichier illisible), `extractAndAnimate` quitte sans retirer la classe `loading` ni changer le badge (`renderer/renderer.js:226`). La vignette reste donc en état de chargement indéfiniment, sans message « NO PREVIEW ». Le comportement attendu n'est pas explicite.
 - La limite de 20 images signifie que les vidéos longues ne sont pas animées sur toute leur durée. Voulu ?
 
 ## 6. Visionneuse plein écran (photos)

@@ -220,6 +220,14 @@ function pump() {
   }
 }
 
+// Stop the spinner and turn the corner badge into a "no preview" marker,
+// used both when extraction errors out and when it yields zero frames.
+function markNoPreview(cell) {
+  cell.classList.remove('loading');
+  const lbl = cell.querySelector('.badge');
+  if (lbl) lbl.textContent = 'NO PREVIEW';
+}
+
 async function extractAndAnimate({ item, cell, img }) {
   // Cell may have been removed by a re-render; bail out if so.
   if (!cell.isConnected) return;
@@ -227,12 +235,16 @@ async function extractAndAnimate({ item, cell, img }) {
   try {
     frames = await api.videoFrames(item.path, item.mtimeMs);
   } catch (e) {
-    cell.classList.remove('loading');
-    const lbl = cell.querySelector('.badge');
-    if (lbl) lbl.textContent = 'NO PREVIEW';
+    markNoPreview(cell);
     return;
   }
-  if (!cell.isConnected || !frames || !frames.length) return;
+  if (!cell.isConnected) return;
+  // Extraction completed but produced nothing (corrupt file, unsupported
+  // codec, empty video): show "NO PREVIEW" instead of a perpetual spinner.
+  if (!frames || !frames.length) {
+    markNoPreview(cell);
+    return;
+  }
   cell.classList.remove('loading');
 
   let i = 0;

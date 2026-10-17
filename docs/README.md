@@ -35,7 +35,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 |---|---|---|---|
 | 1 | Suppression sans confirmation | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | La touche X met à la corbeille immédiatement, sans confirmation ni annulation. Voulu ? |
 | 2 | ~~Modificateurs ignorés~~ — **validé : voulu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`… déclenchent la même action que la touche seule, **volontairement** : robustesse quand les affectations `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (VM, macOS vs Linux natif). |
-| 3 | Vignette vidéo sans image | [features.md FN-07](features.md#5-vignettes-grille) | Si aucune image n'est extraite, la vignette reste en état de chargement indéfiniment, sans « NO PREVIEW ». Comportement attendu ? |
+| 3 | ~~Vignette vidéo sans image~~ — **résolu (2026-10-17)** | [features.md FN-07](features.md#5-vignettes-grille) | Quand l'extraction aboutit à 0 image (erreur **ou** liste vide), la vignette affiche désormais « NO PREVIEW » au lieu d'un spinner infini (helper `markNoPreview`). |
 | 4 | Vidéos longues | [features.md FN-07](features.md#5-vignettes-grille) | Au plus 20 images, espacées de 60 s : seules les ~19 premières minutes sont représentées. Voulu ? |
 | 5 | Tri par nom en sous-dossiers | [features.md FN-04](features.md#4-tri) | Le tri compare le nom de fichier seul, pas le chemin relatif. Des homonymes de dossiers différents sont mélangés. Voulu ? |
 | 6 | Renommage et extension | [features.md FN-13](features.md#fn-13-renommage-touche-r) | Un nom contenant un point est considéré comme ayant déjà une extension (l'extension d'origine n'est pas ajoutée). Voulu ? |
