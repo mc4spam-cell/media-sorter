@@ -130,13 +130,13 @@ Non persisté : dossier courant, mode actif, sélection, position de défilement
 
 | Élément | macOS | Ubuntu / Linux | Réf. |
 |---|---|---|---|
-| Données Electron (`userData`) | `~/Library/Application Support/media-sorter/` **[à confirmer]** | `~/.config/media-sorter/` **[à confirmer]** | `main.js:324` |
-| Cache des vignettes | `<userData>/frames/` | idem | `main.js:324` |
-| Préférences | `<userData>` → stockage `localStorage` de Chromium | idem | `renderer/renderer.js:40-70` |
-| Corbeille | corbeille du Finder (`macos-trash`) | corbeille XDG (`~/.local/share/Trash`) **[à confirmer]** | `main.js:189-193`, `node_modules/trash/lib/` |
-| Application installée | `/Applications/Media Sorter.app` (glisser-déposer depuis le `.dmg`) | `.deb` installé par apt (emplacement par défaut de electron-builder, probablement `/opt/`, **[à confirmer]**) ; AppImage : fichier portable exécutable | `README.md:61`, `README.md:85-86` |
+| Données Electron (`userData`) | `~/Library/Application Support/media-sorter/` | `~/.config/media-sorter/` | `main.js` |
+| Cache des vignettes | `<userData>/frames/` | idem | `main.js` |
+| Préférences | `<userData>` → stockage `localStorage` de Chromium | idem | `renderer/renderer.js` |
+| Corbeille | corbeille du Finder (`macos-trash`) | corbeille XDG (`~/.local/share/Trash`) | `main.js`, `node_modules/trash/lib/` |
+| Application installée | `/Applications/Media Sorter.app` (glisser-déposer depuis le `.dmg`) | `.deb` installé par apt (emplacement par défaut de electron-builder, probablement `/opt/`) ; AppImage : fichier portable exécutable | `README.md` |
 
-Note sur `userData` : le paquet packagé déclare `"name": "media-sorter"` et **n'a pas de `productName`** (vérifié dans `dist/mac/Media Sorter.app/Contents/Resources/app/package.json`). Electron utilise le `productName` s'il existe, sinon le `name`. Le chemin réel est donc probablement en `media-sorter`, et non en `Media Sorter`. **[à confirmer]** en lançant l'application.
+Note sur `userData` : le `package.json` déclare `"name": "media-sorter"` et **pas** de `productName` au niveau racine (il n'existe que sous `build`, pour l'empaquetage). `app.getName()` — qui détermine `userData` — lit le `productName` racine s'il existe, sinon le `name`. Le dossier est donc **`media-sorter`** (et non « Media Sorter »), **de façon cohérente en dev et en app empaquetée** : `build.productName` ne nomme que le bundle `.app`, pas `getName()` au runtime. Écart purement cosmétique (nom technique ≠ nom affiché), volontairement laissé tel quel pour ne pas rendre orphelin le cache existant.
 
 ## 6. Variables d'environnement
 
