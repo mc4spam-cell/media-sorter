@@ -439,11 +439,16 @@ ipcMain.handle('video:frames', async (_e, filePath, mtimeMs) => {
 
   const dur = await probeDuration(filePath);
 
-  // Build the list of timestamps to sample, one per FRAME_INTERVAL_SEC.
+  // Build the list of timestamps to sample. We take at most MAX_FRAMES frames
+  // and spread them across the WHOLE video: keep the 1-frame-per-minute cadence
+  // for short/medium clips, but widen the step for long videos (interval =
+  // dur / MAX_FRAMES) so the stop-motion covers the full duration instead of
+  // stopping ~MAX_FRAMES minutes in.
   let stamps;
   if (dur && dur > FRAME_INTERVAL_SEC) {
+    const interval = Math.max(FRAME_INTERVAL_SEC, dur / MAX_FRAMES);
     stamps = [];
-    for (let t = 0; t < dur && stamps.length < MAX_FRAMES; t += FRAME_INTERVAL_SEC) {
+    for (let t = 0; t < dur && stamps.length < MAX_FRAMES; t += interval) {
       stamps.push(t);
     }
   } else {

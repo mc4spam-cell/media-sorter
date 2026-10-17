@@ -79,7 +79,7 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js:16-19`) :
 Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:374-435`).
 
 **Échantillonnage** :
-- Si la durée est **supérieure à 60 s** : une image toutes les **60 s** (à t = 0, 60, 120, …), au maximum **20 images** (`main.js:314-315`, `390-393`). Une vidéo de plus de 20 minutes n'est donc représentée que par ses 20 premières minutes environ (t ≤ 1140 s).
+- Si la durée est **supérieure à 60 s** : échantillonnage **adaptatif** d'au plus **20 images** réparties sur **toute** la durée. L'intervalle vaut `max(60 s, durée / 20)` : une image toutes les 60 s pour les clips ≤ 20 min (cadence inchangée), puis un pas élargi au-delà (ex. 30 min → 90 s, 2 h → 6 min) pour couvrir ~95 % de la vidéo (`main.js`, constantes `FRAME_INTERVAL_SEC` / `MAX_FRAMES`). *(Depuis le 2026-10-17 ; auparavant, pas fixe de 60 s → seules les ~20 premières minutes étaient représentées.)*
 - Si la durée est **inférieure ou égale à 60 s** ou **inconnue** : une seule image, prise à `min(1 s, durée/2)` ; sans durée connue, à 1 s (`main.js:395-398`). Il n'y a alors pas d'animation.
 - Chaque image est extraite par un appel `ffmpeg` avec seek rapide avant l'entrée (`-ss t -i`), une seule frame, redimensionnée à 400 px de large (`main.js:403-413`).
 - Si aucune image n'est obtenue, une tentative sans seek prend la première frame (`main.js:422-431`).
@@ -90,10 +90,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:3
 - Le badge « VIDEO » est affiché sur chaque vignette vidéo ; la classe `loading` est retirée à réception des images.
 - Quand l'extraction **n'aboutit à aucune image** — qu'elle lève une erreur IPC **ou** qu'elle renvoie une liste vide (fichier corrompu, codec non géré par le ffmpeg embarqué, vidéo vide) — le badge devient **« NO PREVIEW »** et le spinner s'arrête, via le helper `markNoPreview` (`renderer/renderer.js`). *(Résolu le 2026-10-17 ; auparavant le cas « 0 image sans erreur » laissait la vignette en chargement indéfini.)*
 
-**Cache** : les images extraites sont conservées sur disque ; voir [config.md §4](config.md#4-cache-des-images-vidéo).
-
-**[à confirmer]** :
-- La limite de 20 images signifie que les vidéos longues ne sont pas animées sur toute leur durée. Voulu ?
+**Cache** : les images extraites sont conservées sur disque ; voir [config.md §4](config.md#4-cache-des-images-vidéo). Une vidéo déjà en cache garde ses images (clé `chemin:mtime` inchangée) jusqu'à modification du fichier ou purge ; le nouvel échantillonnage ne s'applique donc qu'aux extractions suivantes.
 
 ## 6. Visionneuse plein écran (photos)
 
