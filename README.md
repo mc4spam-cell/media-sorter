@@ -32,7 +32,7 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 ### Browsing controls (toolbar)
 - **Sort** by **Name** or **Date modified**, with an **↑/↓** button to flip ascending/descending.
 - **Subfolders** checkbox — when on, the folder is scanned recursively and each tile shows its path relative to the chosen folder.
-- **Types ▾** menu — per-mode checkboxes to include/exclude file extensions. Defaults are jpg/jpeg/png/webp (photos) and avi/mpg/mpeg/mkv (videos); a set of extra formats (gif, bmp, avif, tiff, tif, heic / mp4, mov, m4v, webm, wmv, flv, 3gp) can be toggled on. Formats Chromium can't render (e.g. tiff, tif, heic) still list and sort, showing the extension instead of a preview.
+- **Types ▾** menu — per-mode checkboxes to include/exclude file extensions. Defaults are jpg/jpeg/png/webp (photos) and avi/mpg/mpeg/mkv (videos); a set of extra formats (gif, bmp, avif / mp4, mov, m4v, webm, wmv, flv, 3gp) can be toggled on. The listed photo formats are all ones Chromium can display; if a file still can't be decoded (corrupt, or an unexpected codec), the tile shows the extension instead of a preview.
 - All of the above — plus the thumbnail size — are **remembered** between launches.
 
 ### Zoom (trackpad)

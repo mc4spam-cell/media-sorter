@@ -44,7 +44,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | 9 | ~~« Ouvrir avec » d'une extension inconnue~~ — **résolu (2026-10-17)** | [features.md FN-15](features.md#9-ouverture-depuis-le-système-ouvrir-avec) | Une extension non-média est désormais refusée (toast « Unsupported file type »), au lieu d'être classée en photo et ajoutée définitivement aux types (`isKnownExt`). |
 | 10 | ~~Plein écran des formats non décodables~~ — **résolu (2026-10-17)** | [features.md FN-08](features.md#6-visionneuse-plein-écran-photos) | Un tiff/heic en plein écran affiche désormais une notice centrée « Cannot preview · EXT » au lieu d'une image cassée (`showViewerError`). |
 | 11 | Purge du cache de vignettes | [config.md §4.3](config.md#43-nettoyage) | Aucune purge n'est implémentée ; le cache croît sans limite. Une purge est-elle souhaitée ? |
-| 12 | Formats `tif` et `heic` | [config.md §2.4](config.md#24-types-de-fichiers) | `tif` est absent du README mais présent dans le code ; `heic` est absent des associations système. Harmoniser ? |
+| 12 | ~~Formats `tif` et `heic`~~ — **résolu (2026-10-17)** | [config.md §2.4](config.md#24-types-de-fichiers) | `tiff`/`tif`/`heic` (non décodables par Chromium) retirés du menu Types **et** des associations système. Menu, associations, code et README désormais alignés ; prefs nettoyées au chargement. |
 | 13 | Mise à jour automatique | [build-and-deploy.md §5.4](build-and-deploy.md#54-mise-à-jour-automatique) | `latest-mac.yml` est généré mais rien ne le consomme. Une mise à jour automatique est-elle prévue ? |
 
 ### B. Bugs ou risques probables à reproduire
@@ -66,7 +66,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | 21 | Dossier de données utilisateur | [config.md §5](config.md#5-chemins-système) | Le paquet n'a pas de `productName` : le chemin probable est `media-sorter` et non `Media Sorter`. À vérifier au lancement. |
 | 22 | Icône et clés `Info.plist` | [build-and-deploy.md §4.4](build-and-deploy.md#44-métadonnées-du-bundle-infoplist) | Icône par défaut d'Electron ; permissions caméra, micro, Bluetooth et `NSAllowsArbitraryLoads` héritées d'Electron. Icône propre et nettoyage voulus ? |
 | 23 | Procédure de release | [build-and-deploy.md §5.3](build-and-deploy.md#53-procédure-de-sortie-déduite-de-lhistorique) | Aucun script de release. La procédure est déduite de l'historique ; à valider. |
-| 24 | README obsolète — **partiellement résolu (2026-10-17)** | [build-and-deploy.md §7](build-and-deploy.md#7-points-dattention) | La version/les artefacts sont corrigés (lien GitHub Releases + 3 packages 1.1.0). Restent : le clic qui lance une vidéo n'est pas décrit, et `tif` n'est pas listé. |
+| 24 | ~~README obsolète~~ — **résolu (2026-10-17)** | [build-and-deploy.md §7](build-and-deploy.md#7-points-dattention) | Version/artefacts corrigés (GitHub Releases + 3 packages), clic-lecture vidéo documenté, et `tiff`/`tif`/`heic` retirés partout (plus d'écart à lister). |
 | 25 | Affichage des performances | [architecture.md §6.2](architecture.md#62-rendu-de-la-grille) | Pas de virtualisation de la grille. Tenue sur de grands dossiers non mesurée. |
 
 ## Hors périmètre actuel

@@ -30,11 +30,11 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff", "tif", "avif"],
+        "ext": ["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"],
         "name": "Image",
         "description": "Image",
         "role": "Viewer",
-        "mimeType": "image/jpeg;image/png;image/webp;image/gif;image/bmp;image/tiff;image/avif"
+        "mimeType": "image/jpeg;image/png;image/webp;image/gif;image/bmp;image/avif"
       }
     ],
     "linux": {

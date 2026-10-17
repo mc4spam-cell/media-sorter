@@ -131,7 +131,7 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 | `CFBundleShortVersionString` / `CFBundleVersion` | `1.1.0` | |
 | `LSMinimumSystemVersion` | `10.15` | valeur par défaut Electron, non déclarée dans `package.json` |
 | `CFBundleIconFile` | `electron.icns` | **icône par défaut d'Electron**, aucune icône propre n'est configurée (`build/` absent) |
-| `CFBundleDocumentTypes` | Image, rôle Viewer, extensions jpg/jpeg/png/webp/gif/bmp/tiff/tif/avif | issu de `build.fileAssociations` |
+| `CFBundleDocumentTypes` | Image, rôle Viewer, extensions jpg/jpeg/png/webp/gif/bmp/avif | issu de `build.fileAssociations` (tiff/tif retirés le 2026-10-17 ; le DMG 1.1.0 publié, antérieur, les contient encore) |
 | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSBluetoothAlwaysUsageDescription` | textes génériques | valeurs par défaut Electron, l'application n'utilise ni caméra, ni micro, ni Bluetooth |
 | `NSAppTransportSecurity.NSAllowsArbitraryLoads` | `true` | valeur par défaut Electron, l'application ne fait aucun appel réseau |
 | `NSHumanReadableCopyright` | « Copyright © 2026 mc » | dérivé de l'auteur du `package.json` |

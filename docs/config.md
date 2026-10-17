@@ -63,16 +63,15 @@ Définis dans `renderer/renderer.js:16-19` et répétés dans `package.json` pou
 
 | Mode | Par défaut | Autres (optionnels) |
 |---|---|---|
-| Photos | `jpg`, `jpeg`, `png`, `webp` | `gif`, `bmp`, `avif`, `tiff`, `tif`, `heic` |
+| Photos | `jpg`, `jpeg`, `png`, `webp` | `gif`, `bmp`, `avif` |
 | Videos | `avi`, `mpg`, `mpeg`, `mkv` | `mp4`, `mov`, `m4v`, `webm`, `wmv`, `flv`, `3gp` |
 
-Associations système déclarées (`package.json`, `build.fileAssociations`) : `jpg`, `jpeg`, `png`, `webp`, `gif`, `bmp`, `tiff`, `tif`, `avif`, avec le type MIME correspondant. Les vidéos ne sont pas associées.
+Associations système déclarées (`package.json`, `build.fileAssociations`) : `jpg`, `jpeg`, `png`, `webp`, `gif`, `bmp`, `avif`, avec le type MIME correspondant. Les vidéos ne sont pas associées.
 
 Remarques :
-- **Affichage** : Chromium n'affiche que les formats qu'il sait décoder. `tiff` et `heic` ne sont pas rendus et affichent un badge avec l'extension (`renderer/renderer.js:158-165`).
+- **Formats photo décodables uniquement** : `tiff`, `tif` et `heic` ont été retirés du menu Types **et** des associations système (le 2026-10-17), car Chromium ne les décode pas — les lister n'apportait qu'un badge « sans aperçu ». La liste du menu et celle des associations sont donc désormais alignées. Code (`TYPE_SETS`) et README concordent (plus d'écart `tif`).
 - **Vignettes vidéo** : passent par ffmpeg, qui décode presque tous les formats listés ; la lecture, elle, est confiée au lecteur du système.
-- **[à confirmer]** : `heic` est listé dans le code et le README, mais absent de `fileAssociations`.
-- **[à confirmer]** : le README ne cite pas `tif` parmi les formats photo supplémentaires, alors que le code le gère. Le CHANGELOG 1.1.0 ne le précise pas non plus.
+- Le badge « sans aperçu » subsiste comme filet de sécurité pour un fichier coché mais illisible (corrompu, codec inattendu).
 
 ## 3. Préférences persistées
 

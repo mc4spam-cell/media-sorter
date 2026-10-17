@@ -41,14 +41,14 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js:16-19`) :
 
 | Mode | Extensions par défaut | Extensions « autres types » (cochées à la demande) |
 |---|---|---|
-| Photos | `jpg`, `jpeg`, `png`, `webp` | `gif`, `bmp`, `avif`, `tiff`, `tif`, `heic` |
+| Photos | `jpg`, `jpeg`, `png`, `webp` | `gif`, `bmp`, `avif` |
 | Videos | `avi`, `mpg`, `mpeg`, `mkv` | `mp4`, `mov`, `m4v`, `webm`, `wmv`, `flv`, `3gp` |
 
-- La correspondance est insensible à la casse (`main.js:152`, `169`).
-- Le menu **Types ▾** (`renderer/renderer.js:580-600`) propose une case par extension, en deux groupes : « Default » et « Other types ». Chaque changement enregistre les préférences et recharge la liste.
+- La correspondance est insensible à la casse (`main.js`).
+- Le menu **Types ▾** propose une case par extension, en deux groupes : « Default » et « Other types ». Chaque changement enregistre les préférences et recharge la liste.
 - Une extension décochée n'apparaît plus dans la liste ; décocher toutes les extensions donne une liste vide.
-- Les formats que Chromium ne sait pas afficher (ex. `tiff`, `heic`) sont listés et triés, avec un badge à la place de l'aperçu (voir FN-06).
-- **[à confirmer]** : le README ne mentionne pas `tif` parmi les formats supplémentaires photo, alors que le code l'inclut (`renderer/renderer.js:17`).
+- Les formats photo listés sont **tous décodables par Chromium**. `tiff`, `tif` et `heic` ont été **retirés** (le 2026-10-17) car non décodables : ils ne sont plus ni proposés dans le menu, ni déclarés dans les associations de fichiers (`package.json`). Un `heic`/`tiff` déjà coché dans les préférences d'un utilisateur est nettoyé au chargement (`loadPrefs`).
+- Le badge d'aperçu reste un filet de sécurité pour un fichier décochable mais illisible (corrompu, codec inattendu) ; voir FN-06 / FN-08.
 
 ## 4. Tri
 
@@ -73,7 +73,7 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js:16-19`) :
 
 ### FN-06 Grille photo
 - Chaque photo est affichée en vignette via une URL `file://` (`renderer/renderer.js:156-166`).
-- Si Chromium ne peut pas afficher le fichier, un badge affiche l'extension en majuscules (ex. `TIFF`, `HEIC`). Le fichier reste listé et sélectionnable.
+- Si Chromium ne peut pas afficher le fichier (corrompu ou codec inattendu — les formats non décodables comme tiff/heic ne sont plus proposés, voir FN-03), un badge affiche l'extension en majuscules. Le fichier reste listé et sélectionnable.
 - Le libellé sous la vignette est le nom du fichier (ou le chemin relatif en mode sous-dossiers).
 
 ### FN-07 Vignettes vidéo : stop-motion
@@ -98,7 +98,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:3
 ### FN-08 Affichage
 - Ouverte par **clic** sur une vignette photo, ou par **Entrée** (`renderer/renderer.js:178-180`, `716-717`).
 - Fond noir, image centrée, légende « nom · position/total » en bas (`renderer/renderer.js:305-311`).
-- Un format que Chromium ne sait pas décoder (tiff, heic…) ouvert en plein écran affiche une **notice centrée « Cannot preview · <EXT> »** (l'image cassée est masquée), en cohérence avec le badge d'extension de la grille. La notice disparaît dès qu'on navigue vers une image affichable (`renderer/renderer.js`, `showViewerError` / `hideViewerError`). *(Depuis le 2026-10-17 ; auparavant, seule une image cassée s'affichait, sans indication.)*
+- Un fichier que Chromium ne sait pas décoder (corrompu ou codec inattendu — les formats non décodables ne sont plus proposés, voir FN-03) ouvert en plein écran affiche une **notice centrée « Cannot preview · <EXT> »** (l'image cassée est masquée), en cohérence avec le badge d'extension de la grille. La notice disparaît dès qu'on navigue vers une image affichable (`renderer/renderer.js`, `showViewerError` / `hideViewerError`). *(Depuis le 2026-10-17 ; auparavant, seule une image cassée s'affichait, sans indication.)*
 - Quitter : **Échap** ou clic sur le fond noir (pas sur l'image) (`renderer/renderer.js:653-655`).
 - Ajustement (`applyFit`, `renderer/renderer.js:370-378`) :
   - par défaut, l'image est réduite pour tenir dans la fenêtre, **sans jamais dépasser sa taille native** ;

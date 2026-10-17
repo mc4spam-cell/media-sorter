@@ -14,7 +14,7 @@ const api = window.api;
 
 // ---------- File types ----------
 const TYPE_SETS = {
-  photos: { default: ['jpg', 'jpeg', 'png', 'webp'], extra: ['gif', 'bmp', 'avif', 'tiff', 'tif', 'heic'] },
+  photos: { default: ['jpg', 'jpeg', 'png', 'webp'], extra: ['gif', 'bmp', 'avif'] },
   videos: { default: ['avi', 'mpg', 'mpeg', 'mkv'], extra: ['mp4', 'mov', 'm4v', 'webm', 'wmv', 'flv', '3gp'] },
 };
 
@@ -73,7 +73,12 @@ function loadPrefs() {
   if (p.sortDir === 'asc' || p.sortDir === 'desc') state.sortDir = p.sortDir;
   if (p.types) {
     for (const k of ['photos', 'videos']) {
-      if (Array.isArray(p.types[k])) state.types[k] = new Set(p.types[k]);
+      if (Array.isArray(p.types[k])) {
+        // Drop any saved extension that is no longer a known type (e.g. tiff /
+        // heic removed), so it can't keep filtering with no checkbox to clear.
+        const known = new Set([...TYPE_SETS[k].default, ...TYPE_SETS[k].extra]);
+        state.types[k] = new Set(p.types[k].filter((e) => known.has(e)));
+      }
     }
   }
 }
