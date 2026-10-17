@@ -1,0 +1,78 @@
+# Media Sorter : documentation de spécifications
+
+Spécifications fonctionnelles et techniques de **Media Sorter**, trieur de photos et vidéos en Electron.
+Version documentée : **1.1.0**.
+
+Ces documents sont **reconstitués à partir du code source** (`main.js`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`). Quand le code ne tranche pas un comportement, le point est marqué **[à confirmer]** et repris dans la liste ci-dessous.
+
+## Sommaire
+
+| Document | Contenu |
+|---|---|
+| [overview.md](overview.md) | But de l'application, personas, périmètre, workflow de tri, glossaire |
+| [architecture.md](architecture.md) | Processus Electron, pont IPC, renderer, flux de données, dépendances, sécurité |
+| [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-19` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis |
+| [build-and-deploy.md](build-and-deploy.md) | Scripts npm, build macOS et Ubuntu, installation, versioning, publication |
+| [config.md](config.md) | Constantes, préférences persistées, formats, cache, chemins système, variables d'environnement |
+
+Les références de code sont au format `fichier:ligne`, relatives à la racine du projet.
+
+## Conventions
+
+- **`FN-xx`** : identifiant d'une fonctionnalité, pour citer un comportement lors d'une validation.
+- **[à confirmer]** : comportement non tranché par le code, ou divergence entre le code, le README et le build.
+- Les sections « Points de vigilance » signalent des risques observés, sans les corriger.
+
+---
+
+## Points à confirmer
+
+Liste consolidée, regroupée par nature. Le numéro sert de référence pour la validation.
+
+### A. Choix de comportement à valider
+
+| # | Sujet | Où | Question |
+|---|---|---|---|
+| 1 | Suppression sans confirmation | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | La touche X met à la corbeille immédiatement, sans confirmation ni annulation. Voulu ? |
+| 2 | Modificateurs ignorés | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`, `Cmd+G`… déclenchent les mêmes actions que les touches seules. Voulu ? |
+| 3 | Vignette vidéo sans image | [features.md FN-07](features.md#5-vignettes-grille) | Si aucune image n'est extraite, la vignette reste en état de chargement indéfiniment, sans « NO PREVIEW ». Comportement attendu ? |
+| 4 | Vidéos longues | [features.md FN-07](features.md#5-vignettes-grille) | Au plus 20 images, espacées de 60 s : seules les ~19 premières minutes sont représentées. Voulu ? |
+| 5 | Tri par nom en sous-dossiers | [features.md FN-04](features.md#4-tri) | Le tri compare le nom de fichier seul, pas le chemin relatif. Des homonymes de dossiers différents sont mélangés. Voulu ? |
+| 6 | Renommage et extension | [features.md FN-13](features.md#fn-13-renommage-touche-r) | Un nom contenant un point est considéré comme ayant déjà une extension (l'extension d'origine n'est pas ajoutée). Voulu ? |
+| 7 | Fichiers cachés et liens symboliques | [features.md FN-05](features.md#4-tri) | Les fichiers cachés sont listés ; les liens symboliques sont ignorés. Voulu ? |
+| 8 | Focus sur la liste « Sort » | [features.md FN-17](features.md#10-raccourcis-clavier) | Après une modification de la liste de tri, les flèches agissent sur la liste et non sur la grille. Acceptable ? |
+| 9 | « Ouvrir avec » d'une extension inconnue | [features.md FN-15](features.md#9-ouverture-depuis-le-système-ouvrir-avec) | L'extension est ajoutée aux types photo. Cas théorique, les associations ne couvrent que les images. |
+| 10 | Plein écran des formats non décodables | [features.md FN-08](features.md#6-visionneuse-plein-écran-photos) | Un tiff ou un heic en plein écran affiche une image cassée, sans badge. Acceptable ? |
+| 11 | Purge du cache de vignettes | [config.md §4.3](config.md#43-nettoyage) | Aucune purge n'est implémentée ; le cache croît sans limite. Une purge est-elle souhaitée ? |
+| 12 | Formats `tif` et `heic` | [config.md §2.4](config.md#24-types-de-fichiers) | `tif` est absent du README mais présent dans le code ; `heic` est absent des associations système. Harmoniser ? |
+| 13 | Mise à jour automatique | [build-and-deploy.md §5.4](build-and-deploy.md#54-mise-à-jour-automatique) | `latest-mac.yml` est généré mais rien ne le consomme. Une mise à jour automatique est-elle prévue ? |
+
+### B. Bugs ou risques probables à reproduire
+
+| # | Sujet | Où | Détail |
+|---|---|---|---|
+| 14 | Fermeture par fond bloquée | [features.md FN-09](features.md#fn-09-zoom-et-déplacement) | `dragMoved` n'est réinitialisé que si l'image est zoomée. Après un glisser suivi d'un retour à l'ajustement, un clic sur le fond peut ne pas fermer la visionneuse. |
+| 15 | Réponses de listage concurrentes | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Pas de jeton de requête sur `loadList` : une réponse obsolète peut écraser la liste courante. |
+| 16 | Chemins non restreints côté processus principal | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `fs:list`, `file:trash`, `file:rename`, `file:open` acceptent tout chemin fourni par le renderer. Risque limité (renderer local), mais aucune restriction au dossier choisi. |
+| 17 | Sandbox du renderer non explicite | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | Le preload semble sandboxé (défaut Electron 31), mais le réglage n'est pas déclaré. |
+| 18 | `read` et `set -e` dans le script Ubuntu | [build-and-deploy.md §3.2](build-and-deploy.md#32-installation-par-script-recommandée) | Une entrée fermée fait échouer le script au lieu de prendre la valeur par défaut. Le script est donc interactif uniquement. |
+
+### C. Divergences entre documentation, code et artefacts
+
+| # | Sujet | Où | Détail |
+|---|---|---|---|
+| 19 | ~~DMG arm64 absent~~ — **résolu (2026-10-17)** | [build-and-deploy.md §4.3](build-and-deploy.md#43-artefacts-et-architecture) | Les 3 artefacts 1.1.0 sont bien publiés sur GitHub Releases (`arm64.dmg`, `intel.dmg`, `amd64.deb`), distincts et valides. Le `dist/` local n'en contenait que la sortie x64 (état partiel). Suffixes `-intel`/`-arm64` posés manuellement à l'upload ; nommage auto `-x64`/`-arm64` depuis le commit `8048843`. |
+| 20 | ~~Artefacts Linux absents~~ — **résolu (2026-10-17)** | [build-and-deploy.md §6](build-and-deploy.md#6-matrice-de-cibles) | Le `.deb` (`media-sorter_1.1.0_amd64.deb`) est présent sur GitHub Releases. Il est seulement absent du `dist/` local (build Linux fait sur une autre machine). |
+| 21 | Dossier de données utilisateur | [config.md §5](config.md#5-chemins-système) | Le paquet n'a pas de `productName` : le chemin probable est `media-sorter` et non `Media Sorter`. À vérifier au lancement. |
+| 22 | Icône et clés `Info.plist` | [build-and-deploy.md §4.4](build-and-deploy.md#44-métadonnées-du-bundle-infoplist) | Icône par défaut d'Electron ; permissions caméra, micro, Bluetooth et `NSAllowsArbitraryLoads` héritées d'Electron. Icône propre et nettoyage voulus ? |
+| 23 | Procédure de release | [build-and-deploy.md §5.3](build-and-deploy.md#53-procédure-de-sortie-déduite-de-lhistorique) | Aucun script de release. La procédure est déduite de l'historique ; à valider. |
+| 24 | README obsolète — **partiellement résolu (2026-10-17)** | [build-and-deploy.md §7](build-and-deploy.md#7-points-dattention) | La version/les artefacts sont corrigés (lien GitHub Releases + 3 packages 1.1.0). Restent : le clic qui lance une vidéo n'est pas décrit, et `tif` n'est pas listé. |
+| 25 | Affichage des performances | [architecture.md §6.2](architecture.md#62-rendu-de-la-grille) | Pas de virtualisation de la grille. Tenue sur de grands dossiers non mesurée. |
+
+## Hors périmètre actuel
+
+- Windows : aucune configuration de build ni de test.
+- Déplacement, copie et classement de fichiers.
+- Annulation des actions.
+- Lecture vidéo intégrée.
+- Tests automatisés et linting.

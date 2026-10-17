@@ -52,19 +52,35 @@ Click **Open folder…**, then switch between the **Photos** and **Videos** tabs
 
 ## Install permanently
 
+Prebuilt packages for each release are on the
+[GitHub Releases page](https://github.com/mc4spam-cell/media-sorter/releases/latest).
+The current **v1.1.0** release ships three:
+
+| Platform | Asset |
+|----------|-------|
+| macOS — Apple Silicon | `Media Sorter-1.1.0-arm64.dmg` |
+| macOS — Intel | `Media Sorter-1.1.0-intel.dmg` |
+| Ubuntu / Debian | `media-sorter_1.1.0_amd64.deb` |
+
 ### macOS
-1. Build (or use the prebuilt `dist/Media Sorter-1.0.0.dmg`):
+1. Download the `.dmg` for your architecture from the release page above
+   (Apple Silicon = `arm64`, Intel = `intel`), **or** build it yourself:
    ```bash
    npm install
    CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
    ```
+   A self-built `.dmg` lands in `dist/` named per architecture (`-x64` / `-arm64`).
 2. Open the `.dmg` and drag **Media Sorter** into **Applications**.
 3. The app is **unsigned**, so the first launch is blocked by Gatekeeper. Either:
    - **Right-click** the app → **Open** → **Open**, or
    - run `xattr -dr com.apple.quarantine "/Applications/Media Sorter.app"` once.
 
 ### Ubuntu / Linux
-Build **on the Linux machine** (so the correct Linux ffmpeg binary is fetched — a build made on macOS would ship the macOS ffmpeg and video thumbnails would not work).
+The quickest option is the prebuilt `media-sorter_1.1.0_amd64.deb` from the
+[release page](https://github.com/mc4spam-cell/media-sorter/releases/latest):
+`sudo apt install ./media-sorter_1.1.0_amd64.deb`.
+
+To build it yourself, do so **on the Linux machine** (so the correct Linux ffmpeg binary is fetched — a build made on macOS would ship the macOS ffmpeg and video thumbnails would not work).
 
 **Easiest — the one-shot script:**
 ```bash
