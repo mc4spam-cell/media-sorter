@@ -82,6 +82,9 @@ Stockées dans `localStorage` (origine `file://` de l'application), écrites par
 |---|---|---|---|---|
 | `prefs` (JSON) → `recursive` | booléen | `false` | case **Subfolders** | booléen obligatoire, sinon ignoré |
 | `prefs` → `maximize` | booléen | `false` | case **Maximize** | booléen obligatoire, sinon ignoré |
+| `prefs` → `confirmDelete` | booléen | `true` | ⚙ **Préférences** → *Confirm before deleting* | booléen obligatoire, sinon ignoré |
+| `prefs` → `showHidden` | booléen | `false` | ⚙ **Préférences** → *Show hidden files* | recharge la liste au changement |
+| `prefs` → `followSymlinks` | booléen | `false` | ⚙ **Préférences** → *Follow symbolic links* | recharge la liste au changement |
 | `prefs` → `sortBy` | `"name"` ou `"mtime"` | `"name"` | liste **Sort** | valeur inconnue ignorée |
 | `prefs` → `sortDir` | `"asc"` ou `"desc"` | `"asc"` | bouton **↑ / ↓** | valeur inconnue ignorée |
 | `prefs` → `types.photos` | tableau de chaînes | les 4 extensions par défaut | menu **Types ▾** | tableau obligatoire ; le contenu n'est pas filtré |

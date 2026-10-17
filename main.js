@@ -150,9 +150,19 @@ ipcMain.handle('dialog:openFolder', async () => {
 
 // ---------- IPC: list files ----------
 ipcMain.handle('fs:list', async (_e, folder, opts) => {
-  const { exts = [], recursive = false, sortBy = 'name', sortDir = 'asc' } = opts || {};
+  const {
+    exts = [],
+    recursive = false,
+    sortBy = 'name',
+    sortDir = 'asc',
+    showHidden = false,
+    followSymlinks = false,
+  } = opts || {};
   const extSet = new Set(exts.map((e) => '.' + String(e).toLowerCase().replace(/^\./, '')));
   const out = [];
+  // Real paths of visited directories, to break symlink loops when following
+  // links. Only consulted when followSymlinks is on.
+  const seenDirs = new Set();
 
   async function walk(dir) {
     let entries;
@@ -162,12 +172,43 @@ ipcMain.handle('fs:list', async (_e, folder, opts) => {
       return; // unreadable dir (permissions, etc.) — skip
     }
     for (const ent of entries) {
+      // Skip dotfiles/dotfolders unless the user opted to show hidden entries.
+      if (!showHidden && ent.name.startsWith('.')) continue;
       const full = path.join(dir, ent.name);
-      if (ent.isDirectory()) {
-        if (recursive) await walk(full);
+
+      let isDir = ent.isDirectory();
+      let isFile = ent.isFile();
+      // Symlinks come back as neither file nor dir (readdir uses lstat).
+      // Resolve the target type only when the user opted to follow links.
+      if (ent.isSymbolicLink()) {
+        if (!followSymlinks) continue;
+        try {
+          const st = await fsp.stat(full); // follows the link
+          isDir = st.isDirectory();
+          isFile = st.isFile();
+        } catch {
+          continue; // broken link
+        }
+      }
+
+      if (isDir) {
+        if (recursive) {
+          if (followSymlinks) {
+            // Visit each real directory once so a link back up can't loop.
+            let real;
+            try {
+              real = await fsp.realpath(full);
+            } catch {
+              real = full;
+            }
+            if (seenDirs.has(real)) continue;
+            seenDirs.add(real);
+          }
+          await walk(full);
+        }
         continue;
       }
-      if (!ent.isFile()) continue;
+      if (!isFile) continue;
       if (!extSet.has(path.extname(ent.name).toLowerCase())) continue;
       let mtimeMs = 0;
       try {
@@ -177,6 +218,11 @@ ipcMain.handle('fs:list', async (_e, folder, opts) => {
     }
   }
 
+  if (followSymlinks) {
+    try {
+      seenDirs.add(await fsp.realpath(folder));
+    } catch {}
+  }
   await walk(folder);
 
   const dir = sortDir === 'desc' ? -1 : 1;

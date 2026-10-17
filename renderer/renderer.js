@@ -28,6 +28,8 @@ const state = {
   recursive: false,
   maximize: false, // upscale photos to fill the window in fullscreen
   confirmDelete: true, // ask before sending a file to the trash (X key)
+  showHidden: false, // list dotfiles / dotfolders
+  followSymlinks: false, // follow symbolic links when scanning
   sortBy: 'name', // 'name' | 'mtime'
   sortDir: 'asc', // 'asc' | 'desc'
   types: {
@@ -46,6 +48,8 @@ function savePrefs() {
         recursive: state.recursive,
         maximize: state.maximize,
         confirmDelete: state.confirmDelete,
+        showHidden: state.showHidden,
+        followSymlinks: state.followSymlinks,
         sortBy: state.sortBy,
         sortDir: state.sortDir,
         types: { photos: [...state.types.photos], videos: [...state.types.videos] },
@@ -63,6 +67,8 @@ function loadPrefs() {
   if (typeof p.recursive === 'boolean') state.recursive = p.recursive;
   if (typeof p.maximize === 'boolean') state.maximize = p.maximize;
   if (typeof p.confirmDelete === 'boolean') state.confirmDelete = p.confirmDelete;
+  if (typeof p.showHidden === 'boolean') state.showHidden = p.showHidden;
+  if (typeof p.followSymlinks === 'boolean') state.followSymlinks = p.followSymlinks;
   if (p.sortBy === 'name' || p.sortBy === 'mtime') state.sortBy = p.sortBy;
   if (p.sortDir === 'asc' || p.sortDir === 'desc') state.sortDir = p.sortDir;
   if (p.types) {
@@ -137,6 +143,8 @@ async function loadList() {
     recursive: state.recursive,
     sortBy: state.sortBy,
     sortDir: state.sortDir,
+    showHidden: state.showHidden,
+    followSymlinks: state.followSymlinks,
   });
   state.selected = 0;
   renderGrid();
@@ -689,6 +697,8 @@ helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHe
 // ---------- Preferences modal ----------
 function openPrefs() {
   $('confirmDelete').checked = state.confirmDelete;
+  $('showHidden').checked = state.showHidden;
+  $('followSymlinks').checked = state.followSymlinks;
   prefsModal.classList.remove('hidden');
   $('confirmDelete').focus();
 }
@@ -699,6 +709,17 @@ prefsModal.addEventListener('click', (e) => { if (e.target === prefsModal) close
 $('confirmDelete').addEventListener('change', (e) => {
   state.confirmDelete = e.target.checked;
   savePrefs();
+});
+// These change what the scan returns, so reload the current folder.
+$('showHidden').addEventListener('change', (e) => {
+  state.showHidden = e.target.checked;
+  savePrefs();
+  loadList();
+});
+$('followSymlinks').addEventListener('change', (e) => {
+  state.followSymlinks = e.target.checked;
+  savePrefs();
+  loadList();
 });
 
 // ---------- Delete confirmation modal ----------

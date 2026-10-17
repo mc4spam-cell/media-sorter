@@ -64,9 +64,10 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js:16-19`) :
 ### FN-05 Sous-dossiers
 - Case **Subfolders** : scan récursif de toute l'arborescence (`main.js:165`).
 - Quand la case est cochée, chaque vignette affiche le **chemin relatif** au dossier choisi (`renderer/renderer.js:149`) ; l'infobulle donne toujours le chemin complet (`renderer/renderer.js:150`).
-- Les sous-dossiers illisibles (droits) sont ignorés sans erreur (`main.js:158-161`).
-- Les liens symboliques ne sont **pas** suivis : une entrée qui n'est ni dossier ni fichier régulier est ignorée (`main.js:162-168`). **[à confirmer]**.
-- Les fichiers cachés (noms commençant par un point) ne sont pas exclus explicitement et apparaissent s'ils ont une extension retenue. **[à confirmer]**.
+- Les sous-dossiers illisibles (droits) sont ignorés sans erreur (`main.js`).
+- **Fichiers cachés** (nom commençant par un point, fichiers **et** dossiers) : exclus par défaut. Une préférence **« Show hidden files »** permet de les inclure. *(Toggle ajouté le 2026-10-17 ; par défaut OFF.)*
+- **Liens symboliques** : non suivis par défaut. Une préférence **« Follow symbolic links »** permet de les résoudre (vers fichiers et dossiers) ; les boucles sont évitées en ne visitant chaque dossier réel qu'une fois (`fs.realpath`). *(Toggle ajouté le 2026-10-17 ; par défaut OFF.)*
+- Les deux réglages ci-dessus sont dans le panneau **⚙ Préférences** et rechargent la liste au changement ; voir [config.md §3](config.md#3-préférences-persistées).
 
 ## 5. Vignettes (grille)
 
