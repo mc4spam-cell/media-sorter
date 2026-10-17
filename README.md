@@ -11,7 +11,7 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 
 ### Videos (`.avi` `.mpg` `.mpeg` `.mkv`)
 - **Thumbnail grid** only.
-- Each thumbnail is an animated **stop-motion / timelapse**: one frame is taken every **60 s** of the video, and each frame is shown for **1 s**, looping.
+- Each thumbnail is an animated **stop-motion / timelapse**: up to **20 frames spread across the whole video** (one every **60 s** for clips up to ~20 min, then a wider step so long videos are still covered end to end), each shown for **1 s**, looping.
 - Frames are extracted with a bundled `ffmpeg` (no system install needed) and cached, so a folder is fast to reopen.
 - Click a thumbnail (or press **Enter**) to **play the video in your system's default player** — Chromium can't decode avi/mpg/mkv, so playback is handed off to the OS (`xdg-open` on Linux, the default app on macOS).
 
@@ -106,4 +106,5 @@ Then either:
 - `ffmpeg` ships with the app via `ffmpeg-static`; nothing to install separately. (G/S editor shortcuts do require GIMP/Shotcut installed.)
 - The build uses `asar: false` so the bundled `ffmpeg` and `trash` binaries stay directly executable.
 - Extracted video frames are cached under the app's user-data directory, keyed by file path + modification time.
-- Frame extraction is capped at 20 frames per video to stay responsive on long files.
+- Frame extraction is capped at 20 frames per video, spaced by `max(60s, duration/20)` so the 20 frames span the whole video while short clips keep the one-per-minute cadence.
+- Thumbnails load lazily: photos use native lazy-loading, and a video only extracts/animates its frames when it scrolls near the viewport (its timer pauses off-screen), so folders of thousands of files stay responsive.

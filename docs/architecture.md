@@ -30,7 +30,7 @@ Application Electron classique en trois couches :
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Il n'y a **ni framework front, ni bundler, ni base de données**. Le renderer est du JavaScript vanilla ; tout l'état vit dans un objet unique `state` (`renderer/renderer.js:22-36`).
+Il n'y a **ni framework front, ni bundler, ni base de données**. Le renderer est du JavaScript vanilla ; tout l'état vit dans un objet unique `state` (`renderer/renderer.js`).
 
 ## 2. Structure du dépôt
 
@@ -56,62 +56,62 @@ Toutes les communications sont des `invoke` (requête/réponse) sauf deux évén
 
 | Canal | Sens | Entrée | Sortie | Implémentation | Pont (preload) |
 |---|---|---|---|---|---|
-| `dialog:openFolder` | R → M | — | chemin ou `null` | `main.js:143-147` | `openFolder()` |
-| `fs:list` | R → M | `folder`, `{exts, recursive, sortBy, sortDir}` | `[{name, path, mtimeMs, rel}]` | `main.js:150-186` | `list(folder, opts)` |
-| `file:trash` | R → M | `filePath` | `true` | `main.js:189-193` | `trash(filePath)` |
-| `file:rename` | R → M | `oldPath`, `newName` | nouveau chemin | `main.js:196-217` | `rename(oldPath, newName)` |
-| `file:open` | R → M | `filePath` | `true` (erreur sinon) | `main.js:274-283` | `openExternal(filePath)` |
-| `file:openWith` | R → M | `filePath`, `appKey` (`gimp`/`shotcut`) | `true` (erreur sinon) | `main.js:292-311` | `openWith(filePath, app)` |
-| `video:frames` | R → M | `filePath`, `mtimeMs` | tableau de chemins de frames | `main.js:374-435` | `videoFrames(filePath, mtimeMs)` |
-| `app:getPendingFile` | R → M | — | chemin ou `null` (consommé) | `main.js:136-140` | `getPendingFile()` |
-| `open-file` | M → R (événement) | chemin | — | `main.js:89-95`, `99-103`, `111-118` | `onOpenFile(cb)` |
+| `dialog:openFolder` | R → M | — | chemin ou `null` | `main.js` | `openFolder()` |
+| `fs:list` | R → M | `folder`, `{exts, recursive, sortBy, sortDir, showHidden, followSymlinks}` | `[{name, path, mtimeMs, rel}]` | `main.js` | `list(folder, opts)` |
+| `file:trash` | R → M | `filePath` | `true` | `main.js` | `trash(filePath)` |
+| `file:rename` | R → M | `oldPath`, `newName` | nouveau chemin | `main.js` | `rename(oldPath, newName)` |
+| `file:open` | R → M | `filePath` | `true` (erreur sinon) | `main.js` | `openExternal(filePath)` |
+| `file:openWith` | R → M | `filePath`, `appKey` (`gimp`/`shotcut`) | `true` (erreur sinon) | `main.js` | `openWith(filePath, app)` |
+| `video:frames` | R → M | `filePath`, `mtimeMs` | tableau de chemins de frames | `main.js` | `videoFrames(filePath, mtimeMs)` |
+| `app:getPendingFile` | R → M | — | chemin ou `null` (consommé) | `main.js` | `getPendingFile()` |
+| `open-file` | M → R (événement) | chemin | — | `main.js` | `onOpenFile(cb)` |
 
-`toFileURL` (`preload.js:7-12`) est une fonction purement locale, exposée au renderer pour construire les URL `file://` des images.
+`toFileURL` (`preload.js`) est une fonction purement locale, exposée au renderer pour construire les URL `file://` des images.
 
 ## 4. Processus principal (`main.js`)
 
 ### 4.1 Fenêtre
 
-- Une seule fenêtre `BrowserWindow` 1400 × 900, fond `#000000`, titre « Media Sorter » (`main.js:31-46`).
-- `contextIsolation: true`, `nodeIntegration: false`, `preload` = `preload.js` (`main.js:37-41`).
-- Barre de menu masquée (`main.js:45`).
-- Zoom natif de la page désactivé après chargement (`setVisualZoomLevelLimits(1, 1)`, `main.js:49-51`) : le pinch-zoom est donc géré uniquement par l'application.
+- Une seule fenêtre `BrowserWindow` 1400 × 900, fond `#000000`, titre « Media Sorter » (`main.js`).
+- `contextIsolation: true`, `nodeIntegration: false`, `preload` = `preload.js` (`main.js`).
+- Barre de menu masquée (`main.js`).
+- Zoom natif de la page désactivé après chargement (`setVisualZoomLevelLimits(1, 1)`, `main.js`) : le pinch-zoom est donc géré uniquement par l'application.
 
 ### 4.2 Cycle de vie
 
 | Événement | Comportement | Référence |
 |---|---|---|
-| Instance unique | `requestSingleInstanceLock()` ; une seconde instance quitte, et son fichier éventuel est transmis à la première | `main.js:107-118` |
-| `whenReady` | Récupère un fichier passé en argument (`fileArgFrom(process.argv)`), crée la fenêtre, recrée une fenêtre sur `activate` (macOS) | `main.js:120-128` |
-| `open-file` (macOS) | Bufferise le fichier si la fenêtre n'existe pas encore | `main.js:99-103` |
-| `window-all-closed` | Quitte sauf sous macOS | `main.js:131-133` |
+| Instance unique | `requestSingleInstanceLock()` ; une seconde instance quitte, et son fichier éventuel est transmis à la première | `main.js` |
+| `whenReady` | Récupère un fichier passé en argument (`fileArgFrom(process.argv)`), crée la fenêtre, recrée une fenêtre sur `activate` (macOS) | `main.js` |
+| `open-file` (macOS) | Bufferise le fichier si la fenêtre n'existe pas encore | `main.js` |
+| `window-all-closed` | Quitte sauf sous macOS | `main.js` |
 
 ### 4.3 Traitement des arguments « Ouvrir avec »
 
-- `argToPath` (`main.js:60-70`) convertit une URI `file://` (avec ou sans hôte) en chemin POSIX décodé.
-- `fileArgFrom` (`main.js:76-86`) retient le premier argument, hors exécutable et hors options `-…`, qui est un fichier existant.
+- `argToPath` (`main.js`) convertit une URI `file://` (avec ou sans hôte) en chemin POSIX décodé.
+- `fileArgFrom` (`main.js`) retient le premier argument, hors exécutable et hors options `-…`, qui est un fichier existant.
 
 ### 4.4 Lancement d'applications externes
 
-- Linux : `spawnDetached` lance le binaire avec `detached: true`, `stdio: 'ignore'`, puis `unref()` (`main.js:255-271`). L'environnement est assaini par `childEnv()` (`main.js:225-252`) : retrait des variables de chargement injectées par l'AppImage (`LD_LIBRARY_PATH`, `GTK_PATH`, `QT_PLUGIN_PATH`, etc.) et restauration des valeurs `*_ORIG`. Ce correctif est décrit dans le CHANGELOG 1.0.1.
-- macOS : `open -a <App> <fichier>` (`main.js:296-307`).
-- Ouverture par défaut : `xdg-open` sous Linux (assaini), `shell.openPath` ailleurs (`main.js:274-283`).
+- Linux : `spawnDetached` lance le binaire avec `detached: true`, `stdio: 'ignore'`, puis `unref()` (`main.js`). L'environnement est assaini par `childEnv()` (`main.js`) : retrait des variables de chargement injectées par l'AppImage (`LD_LIBRARY_PATH`, `GTK_PATH`, `QT_PLUGIN_PATH`, etc.) et restauration des valeurs `*_ORIG`. Ce correctif est décrit dans le CHANGELOG 1.0.1.
+- macOS : `open -a <App> <fichier>` (`main.js`).
+- Ouverture par défaut : `xdg-open` sous Linux (assaini), `shell.openPath` ailleurs (`main.js`).
 
 ### 4.5 Extraction de frames vidéo
 
-Détaillée dans [features.md, FN-07](features.md#5-vignettes-grille) et [config.md](config.md#2-constantes-de-code). Résumé : `probeDuration` lit la durée dans la bannière de `ffmpeg -i` (`main.js:350-365`), puis `runFfmpeg` extrait une image par point d'échantillonnage (`main.js:328-347`, `403-418`), avec mise en cache sur disque (`main.js:374-435`).
+Détaillée dans [features.md, FN-07](features.md#5-vignettes-grille) et [config.md](config.md#2-constantes-de-code). Résumé : `probeDuration` lit la durée dans la bannière de `ffmpeg -i` (`main.js`), puis `runFfmpeg` extrait une image par point d'échantillonnage (`main.js`), avec mise en cache sur disque (`main.js`).
 
 ## 5. Preload (`preload.js`)
 
-Le preload n'expose qu'un objet `api` figé par `contextBridge` (`preload.js:14-27`). Le renderer n'a donc accès ni à `ipcRenderer` ni à Node. Le commentaire de `preload.js:5-6` précise que le module `url` de Node n'est pas disponible dans le preload sandboxé, d'où la construction manuelle de l'URL.
+Le preload n'expose qu'un objet `api` figé par `contextBridge` (`preload.js`). Le renderer n'a donc accès ni à `ipcRenderer` ni à Node. Le commentaire de `preload.js` précise que le module `url` de Node n'est pas disponible dans le preload sandboxé, d'où la construction manuelle de l'URL.
 
-Conséquence pour le renderer : il ne peut pas utiliser le module `path` ; `renderer/renderer.js:516-536` réimplémente `pathDir`, `pathBase` et `extOfName` pour `openPath`.
+Conséquence pour le renderer : il ne peut pas utiliser le module `path` ; `renderer/renderer.js` réimplémente `pathDir`, `pathBase` et `extOfName` pour `openPath`.
 
 ## 6. Renderer
 
 ### 6.1 Organisation de `renderer.js`
 
-Le fichier est enveloppé dans une IIFE protégée contre une double évaluation (`window.__mediaSorterInit`, `renderer/renderer.js:6-11`). Sections, dans l'ordre :
+Le fichier est enveloppé dans une IIFE protégée contre une double évaluation (`window.__mediaSorterInit`, `renderer/renderer.js`). Sections, dans l'ordre :
 
 | Section | Lignes | Contenu |
 |---|---|---|
@@ -167,15 +167,17 @@ loadList()  (renderer)
 ### 7.2 Vignette vidéo
 
 ```
-renderGrid() → queueFrames(item, cell, img)
-  └─ pump() → extractAndAnimate()
-       └─ api.videoFrames(path, mtimeMs)
-            └─ ipc video:frames (main)
-                 ├─ cache présent avec .done ? → renvoie les frames
-                 ├─ probeDuration (ffmpeg -i)
-                 ├─ pour chaque timestamp : ffmpeg -ss t -i … -frames:v 1 -vf scale=400:-2
-                 └─ fallback : première frame sans seek ; écrit .done si ≥ 1 frame
-       └─ img.src = frame[0] ; setInterval 1 s pour la boucle
+renderGrid() → gridObserver.observe(cell)   (cellule vidéo)
+  └─ onIntersect : la tuile approche du viewport → queueExtract(st)
+       └─ pump() → extractFrames(st)          (max 2 en parallèle)
+            └─ api.videoFrames(path, mtimeMs)
+                 └─ ipc video:frames (main)
+                      ├─ cache présent avec .done ? → renvoie les frames (bump mtime)
+                      ├─ probeDuration (ffmpeg -i)
+                      ├─ pour chaque timestamp : ffmpeg -ss t -i … -frames:v 1 -vf scale=400:-2
+                      └─ fallback : première frame sans seek ; écrit .done si ≥ 1 frame
+       └─ img.src = frame[0] ; si visible et > 1 frame : startAnimation (setInterval 1 s)
+  └─ onIntersect (sortie d'écran) : stopCell(st) met le timer en pause
 ```
 
 ### 7.3 Ouverture d'un fichier « Ouvrir avec »
@@ -194,26 +196,26 @@ renderer : getPendingFile() au démarrage ; onOpenFile() ensuite
 |---|---|---|---|
 | `electron` | `^31.0.0` (dev) | 31.7.7 | Runtime desktop |
 | `electron-builder` | `^24.13.3` (dev) | 24.13.3 | Génération des paquets |
-| `ffmpeg-static` | `^5.2.0` | 5.3.0 | Binaire ffmpeg embarqué (chemin résolu dans `main.js:11-14`) |
-| `trash` | `^7.2.0` | 7.2.0 | Mise à la corbeille, ESM chargé dynamiquement (`main.js:16-24`) |
+| `ffmpeg-static` | `^5.2.0` | 5.3.0 | Binaire ffmpeg embarqué (chemin résolu dans `main.js`) |
+| `trash` | `^7.2.0` | 7.2.0 | Mise à la corbeille, ESM chargé dynamiquement (`main.js`) |
 
-Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement (commentaire `main.js:16`).
+Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement (commentaire `main.js`).
 
 ## 9. Sécurité et isolation
 
 | Mesure | Où | Remarque |
 |---|---|---|
-| Content-Security-Policy | `renderer/index.html:6-8` | `default-src 'self'` ; `img-src` et `media-src` autorisent `file:` et `data:` ; `script-src 'self'` (aucun script inline) ; `style-src 'self' 'unsafe-inline'` |
-| `contextIsolation` | `main.js:39` | activé |
-| `nodeIntegration` | `main.js:40` | désactivé |
-| Sandbox du renderer | **`sandbox: true` explicite** | Déclaré dans les `webPreferences` (`main.js`, ajouté le 2026-10-17) au lieu de dépendre du défaut d'Electron, pour verrouiller la posture à travers les futures montées de version. Le preload n'utilise que `contextBridge`/`ipcRenderer`, compatibles sandbox (`preload.js:5`). |
-| Lancement sans shell | `spawn(cmd, args)` dans `main.js:258`, `300`, `330`, `352` | Pas d'interpolation de chaîne dans un shell |
+| Content-Security-Policy | `renderer/index.html` | `default-src 'self'` ; `img-src` et `media-src` autorisent `file:` et `data:` ; `script-src 'self'` (aucun script inline) ; `style-src 'self' 'unsafe-inline'` |
+| `contextIsolation` | `main.js` | activé |
+| `nodeIntegration` | `main.js` | désactivé |
+| Sandbox du renderer | **`sandbox: true` explicite** | Déclaré dans les `webPreferences` (`main.js`, ajouté le 2026-10-17) au lieu de dépendre du défaut d'Electron, pour verrouiller la posture à travers les futures montées de version. Le preload n'utilise que `contextBridge`/`ipcRenderer`, compatibles sandbox (`preload.js`). |
+| Lancement sans shell | `spawn(cmd, args)` dans `main.js` | Pas d'interpolation de chaîne dans un shell |
 | Validation des chemins | partielle (type de cible) | `file:trash`, `file:rename`, `file:open`, `file:openWith` valident désormais que la cible est un **fichier régulier existant** (`assertRegularFile`) avant d'agir — durcissement défensif ajouté le 2026-10-17. Il n'y a pas (volontairement) de restriction au dossier choisi : le flux « Ouvrir avec » et le multi-dossiers l'exigent. Le renderer reste local et de confiance (CSP `script-src 'self'`, aucune entrée distante), donc le risque restait théorique. |
-| Renommage | `main.js:199-204` | Les séparateurs `/` et `\` sont remplacés par `_` |
+| Renommage | `main.js` | Les séparateurs `/` et `\` sont remplacés par `_` |
 
 ## 10. Contraintes et particularités
 
 - **Pas de test automatisé** dans le dépôt.
-- **Électron `asar: false`** (`package.json`, section `build`) : `ffmpeg` et `trash` restent des exécutables directement accessibles. La branche `app.asar` de `main.js:12-13` est donc du code défensif.
+- **Électron `asar: false`** (`package.json`, section `build`) : `ffmpeg` et `trash` restent des exécutables directement accessibles. La branche `app.asar` de `main.js` est donc du code défensif.
 - **Persistance** uniquement via `localStorage` du renderer (voir [config.md §3](config.md#3-préférences-persistées)) et le cache de frames sur disque.
 - **Plateforme de build** : `ffmpeg-static` télécharge le binaire correspondant à la plateforme au moment de l'installation des dépendances (`node_modules/ffmpeg-static/install.js`). Un build doit donc être fait sur la plateforme cible ([build-and-deploy.md](build-and-deploy.md)).

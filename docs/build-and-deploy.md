@@ -1,18 +1,18 @@
 # Build, déploiement et versioning
 
 > Références `fichier:ligne` relatives à `/Users/mc/media-sorter`.
-> Version documentée : **1.1.0** (`package.json:3`, `CHANGELOG.md:7`).
+> Version documentée : **1.1.0** (`package.json`, `CHANGELOG.md:7`).
 > Voir aussi [config.md §7](config.md#7-configuration-de-build-packagejson) pour la configuration `electron-builder`.
 
 ## 1. Prérequis
 
 | Élément | Exigence | Source |
 |---|---|---|
-| Node.js | ≥ 18 (le script Ubuntu installe Node 20.x si absent ou trop ancien) | `install-ubuntu.sh:26-37` |
+| Node.js | ≥ 18 (le script Ubuntu installe Node 20.x si absent ou trop ancien) | `install-ubuntu.sh` |
 | npm | fourni avec Node | — |
 | Build macOS (`.dmg`) | Être sous macOS | convention electron-builder, non vérifiée dans le dépôt |
 | Build Linux (`AppImage`, `.deb`) | Être **sous Linux** | `README.md:67` : le binaire ffmpeg est téléchargé pour la plateforme de build |
-| Exécution AppImage | `libfuse2` (ou `libfuse2t64`) | `install-ubuntu.sh:22` |
+| Exécution AppImage | `libfuse2` (ou `libfuse2t64`) | `install-ubuntu.sh` |
 | Éditeurs externes (optionnels) | GIMP, Shotcut | `README.md:89`, touches G et S |
 
 ## 2. Scripts npm
@@ -30,9 +30,9 @@ Il n'existe **ni script de test, ni script de lint** dans `package.json`.
 
 ### 3.1 Cibles électron-builder
 
-- `AppImage` : exécutable portable, sans installation (`package.json:41-45`).
+- `AppImage` : exécutable portable, sans installation (`package.json`).
 - `.deb` : paquet Debian, installé avec apt ; enregistre les associations de fichiers image, contrairement à l'AppImage (`CHANGELOG.md:17-19`).
-- Catégorie : `Graphics` (`package.json:45`).
+- Catégorie : `Graphics` (`package.json`).
 
 ### 3.2 Installation par script (recommandée)
 
@@ -42,7 +42,7 @@ cd media-sorter
 bash install-ubuntu.sh
 ```
 
-Étapes du script `install-ubuntu.sh` (`set -euo pipefail`, `install-ubuntu.sh:6`) :
+Étapes du script `install-ubuntu.sh` (`set -euo pipefail`, `install-ubuntu.sh`) :
 
 | # | Étape | Lignes |
 |---|---|---|
@@ -72,7 +72,7 @@ Puis, au choix (`README.md:84-86`) :
 
 ### 3.4 Dépendances à l'exécution
 
-- Le lecteur vidéo par défaut est celui du système, ouvert via `xdg-open` (`main.js:278`).
+- Le lecteur vidéo par défaut est celui du système, ouvert via `xdg-open` (`main.js`).
 - GIMP et Shotcut doivent être installés séparément pour les touches G et S.
 - La corbeille utilise la spécification XDG (`node_modules/trash/lib/linux.js`).
 
@@ -96,7 +96,7 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
 
 ### 4.3 Artefacts et architecture
 
-- Nom des fichiers (config HEAD) : `${productName}-${version}-${arch}.${ext}` (`package.json:52`, ajouté par le commit `8048843`). electron-builder substitue `${arch}` par `x64` ou `arm64` : les **prochains** builds mac sortiront donc en `-x64.dmg` / `-arm64.dmg`.
+- Nom des fichiers (config HEAD) : `${productName}-${version}-${arch}.${ext}` (`package.json`, ajouté par le commit `8048843`). electron-builder substitue `${arch}` par `x64` ou `arm64` : les **prochains** builds mac sortiront donc en `-x64.dmg` / `-arm64.dmg`.
 - Aucune architecture n'est forcée : `npm run dist:mac` construit pour l'architecture de la machine de build. Un build universel ou multi-arch demanderait `--x64 --arm64` (non configuré).
 
 **Artefacts réellement publiés — GitHub Releases, tag `v1.1.0` (publié le 2026-10-17 12:47 UTC) :**
@@ -145,7 +145,7 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 ### 5.1 Schéma
 
 - **SemVer** (`CHANGELOG.md:4`) et format **Keep a Changelog**.
-- Version unique dans `package.json` (`package.json:3`). Elle est reprise dans le bundle macOS (`CFBundleShortVersionString`) et dans `latest-mac.yml`.
+- Version unique dans `package.json` (`package.json`). Elle est reprise dans le bundle macOS (`CFBundleShortVersionString`) et dans `latest-mac.yml`.
 
 ### 5.2 Historique
 

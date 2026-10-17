@@ -18,48 +18,48 @@
 
 | Constante | Valeur | Réf. |
 |---|---|---|
-| Largeur × hauteur initiales | 1400 × 900 | `main.js:33-34` |
-| Couleur de fond | `#000000` | `main.js:35` |
-| Titre | « Media Sorter » | `main.js:36` |
-| Barre de menu | masquée | `main.js:45` |
-| Zoom natif de page | verrouillé à 1 | `main.js:49-51` |
+| Largeur × hauteur initiales | 1400 × 900 | `main.js` |
+| Couleur de fond | `#000000` | `main.js` |
+| Titre | « Media Sorter » | `main.js` |
+| Barre de menu | masquée | `main.js` |
+| Zoom natif de page | verrouillé à 1 | `main.js` |
 
 ### 2.2 Vidéo et ffmpeg
 
 | Constante | Valeur | Réf. | Effet |
 |---|---|---|---|
-| `FRAME_INTERVAL_SEC` | 60 | `main.js:314` | Une image par minute de vidéo |
-| `MAX_FRAMES` | 20 | `main.js:315` | Plafond d'images par vidéo |
-| `FFMPEG_TIMEOUT_MS` | 20 000 | `main.js:316` | Délai maximal par appel ffmpeg (extraction) |
-| Délai de la sonde de durée | 15 000 ms | `main.js:354` | Délai avant arrêt de `ffmpeg -i` |
-| Largeur des images | 400 px (hauteur proportionnelle, `-2`) | `main.js:410`, `427` | Taille des vignettes |
-| Qualité JPEG | `-q:v 4` | `main.js:411` | Compression des images extraites |
-| Extractions concurrentes (renderer) | 2 | `renderer/renderer.js:194` | File d'attente côté interface |
-| Durée d'affichage d'une image | 1000 ms | `renderer/renderer.js:234` | Vitesse du stop-motion |
+| `FRAME_INTERVAL_SEC` | 60 | `main.js` | Une image par minute de vidéo |
+| `MAX_FRAMES` | 20 | `main.js` | Plafond d'images par vidéo |
+| `FFMPEG_TIMEOUT_MS` | 20 000 | `main.js` | Délai maximal par appel ffmpeg (extraction) |
+| Délai de la sonde de durée | 15 000 ms | `main.js` | Délai avant arrêt de `ffmpeg -i` |
+| Largeur des images | 400 px (hauteur proportionnelle, `-2`) | `main.js` | Taille des vignettes |
+| Qualité JPEG | `-q:v 4` | `main.js` | Compression des images extraites |
+| Extractions concurrentes (renderer) | 2 | `renderer/renderer.js` | File d'attente côté interface |
+| Durée d'affichage d'une image | 1000 ms | `renderer/renderer.js` | Vitesse du stop-motion |
 
 Arguments ffmpeg utilisés :
 
 ```
-ffprobe-like :  ffmpeg -i <fichier>                       (lecture de la durée sur stderr, main.js:352)
-extraction   :  ffmpeg -ss <t> -i <fichier> -frames:v 1 -vf scale=400:-2 -q:v 4 -y <frame_NNNN.jpg>   (main.js:406-413)
-repli        :  ffmpeg -i <fichier> -frames:v 1 -vf scale=400:-2 -y frame_0001.jpg                    (main.js:424-429)
+ffprobe-like :  ffmpeg -i <fichier>                       (lecture de la durée sur stderr, main.js)
+extraction   :  ffmpeg -ss <t> -i <fichier> -frames:v 1 -vf scale=400:-2 -q:v 4 -y <frame_NNNN.jpg>   (main.js)
+repli        :  ffmpeg -i <fichier> -frames:v 1 -vf scale=400:-2 -y frame_0001.jpg                    (main.js)
 ```
 
 ### 2.3 Zoom, vignettes et interface
 
 | Constante | Valeur | Réf. |
 |---|---|---|
-| Zoom maximal (visionneuse) | 8 × | `renderer/renderer.js:317` |
-| Facteur de molette (sans Ctrl) | `exp(-deltaY × 0.0015)` | `renderer/renderer.js:396` |
-| Facteur de pincement (Ctrl + molette) | `exp(-deltaY × 0.01)` | `renderer/renderer.js:396`, `685` |
-| Taille de vignette minimale | 110 px | `renderer/renderer.js:659` |
-| Taille de vignette maximale | 480 px | `renderer/renderer.js:660` |
-| Taille de vignette par défaut | 200 px | `renderer/styles.css:173-174` (repli de `var(--tile)`) |
-| Durée des messages | 1800 ms | `renderer/renderer.js:94` |
+| Zoom maximal (visionneuse) | 8 × | `renderer/renderer.js` |
+| Facteur de molette (sans Ctrl) | `exp(-deltaY × 0.0015)` | `renderer/renderer.js` |
+| Facteur de pincement (Ctrl + molette) | `exp(-deltaY × 0.01)` | `renderer/renderer.js` |
+| Taille de vignette minimale | 110 px | `renderer/renderer.js` |
+| Taille de vignette maximale | 480 px | `renderer/renderer.js` |
+| Taille de vignette par défaut | 200 px | `renderer/styles.css` (repli de `var(--tile)`) |
+| Durée des messages | 1800 ms | `renderer/renderer.js` |
 
 ### 2.4 Types de fichiers
 
-Définis dans `renderer/renderer.js:16-19` et répétés dans `package.json` pour les associations système (`build.fileAssociations`).
+Définis dans `renderer/renderer.js` et répétés dans `package.json` pour les associations système (`build.fileAssociations`).
 
 | Mode | Par défaut | Autres (optionnels) |
 |---|---|---|
@@ -75,7 +75,7 @@ Remarques :
 
 ## 3. Préférences persistées
 
-Stockées dans `localStorage` (origine `file://` de l'application), écrites par `savePrefs` (`renderer/renderer.js:40-53`) et relues par `loadPrefs` (`renderer/renderer.js:54-70`).
+Stockées dans `localStorage` (origine `file://` de l'application), écrites par `savePrefs` (`renderer/renderer.js`) et relues par `loadPrefs` (`renderer/renderer.js`).
 
 | Clé | Format | Défaut | Réglage UI | Validation à la lecture |
 |---|---|---|---|---|
@@ -86,15 +86,15 @@ Stockées dans `localStorage` (origine `file://` de l'application), écrites par
 | `prefs` → `followSymlinks` | booléen | `false` | ⚙ **Préférences** → *Follow symbolic links* | recharge la liste au changement |
 | `prefs` → `sortBy` | `"name"` ou `"mtime"` | `"name"` | liste **Sort** | valeur inconnue ignorée |
 | `prefs` → `sortDir` | `"asc"` ou `"desc"` | `"asc"` | bouton **↑ / ↓** | valeur inconnue ignorée |
-| `prefs` → `types.photos` | tableau de chaînes | les 4 extensions par défaut | menu **Types ▾** | tableau obligatoire ; le contenu n'est pas filtré |
+| `prefs` → `types.photos` | tableau de chaînes | les 4 extensions par défaut | menu **Types ▾** | tableau obligatoire ; `loadPrefs` **filtre** les extensions inconnues (hors `TYPE_SETS`), p. ex. un `tiff`/`heic` enregistré est écarté au chargement |
 | `prefs` → `types.videos` | tableau de chaînes | les 4 extensions par défaut | menu **Types ▾** | idem |
 | `tileSize` | entier en chaîne | absent (200 px) | pincement Ctrl + molette | `parseInt` ; appliqué via `setTile` (borné 110–480) |
 
 Comportement :
-- Chaque changement réécrit l'intégralité de `prefs` (`renderer/renderer.js:40-53`).
-- Un JSON corrompu est ignoré : l'application démarre avec les valeurs par défaut (`renderer/renderer.js:55-60`).
+- Chaque changement réécrit l'intégralité de `prefs` (`renderer/renderer.js`).
+- Un JSON corrompu est ignoré : l'application démarre avec les valeurs par défaut (`renderer/renderer.js`).
 - Si `localStorage` est indisponible, les préférences sont simplement non persistées : aucune erreur n'est affichée.
-- Un fichier ouvert via « Ouvrir avec » peut ajouter son extension à `types.<mode>` (`renderer/renderer.js:547-551`).
+- Un fichier ouvert via « Ouvrir avec » peut ajouter son extension à `types.<mode>` (`renderer/renderer.js`).
 
 Non persisté : dossier courant, mode actif, sélection, position de défilement, état de la visionneuse.
 
@@ -110,21 +110,21 @@ Non persisté : dossier courant, mode actif, sélection, position de défilement
     .done                  (présent seulement si au moins une image a été produite)
 ```
 
-- `<userData>` : dossier de données Electron de l'application (`app.getPath('userData')`, `main.js:324`). Voir §5.
-- `<clé>` : les 16 premiers caractères hexadécimaux de `SHA-1("<chemin>:<mtimeMs>")` (`main.js:318-325`).
-- Numérotation : `frame_NNNN.jpg` sur 4 chiffres, à partir de `0001` (`main.js:404`).
+- `<userData>` : dossier de données Electron de l'application (`app.getPath('userData')`, `main.js`). Voir §5.
+- `<clé>` : les 16 premiers caractères hexadécimaux de `SHA-1("<chemin>:<mtimeMs>")` (`main.js`).
+- Numérotation : `frame_NNNN.jpg` sur 4 chiffres, à partir de `0001` (`main.js`).
 
 ### 4.2 Règles de validité
 
-- Une entrée est **réutilisée** si `.done` existe et contient au moins une image (`main.js:378-381`).
+- Une entrée est **réutilisée** si `.done` existe et contient au moins une image (`main.js`).
 - La clé dépend du **chemin** et de la **date de modification** : modifier, renommer ou déplacer une vidéo crée une nouvelle entrée et laisse l'ancienne en place.
-- Sans `.done` (aucune image produite), l'extraction est retentée à chaque affichage (`main.js:384-433`).
+- Sans `.done` (aucune image produite), l'extraction est retentée à chaque affichage (`main.js`).
 
 ### 4.3 Nettoyage
 
-**Aucune purge n'est implémentée.** Le processus principal ne supprime jamais de fichier (aucun appel `unlink`, `rm` ou `rmdir` dans `main.js`). Le cache croît donc sans limite, et une entrée devient orpheline après modification ou suppression de la vidéo.
+**Purge au démarrage** (`pruneFrameCache`, appelée depuis `whenReady` dans `main.js`) : le cache est nettoyé à chaque lancement. Éviction d'abord par **âge** (dossiers non touchés depuis plus de **90 jours**, `CACHE_MAX_AGE_MS`), puis en **LRU** jusqu'à repasser sous un plafond de **500 Mo** (`CACHE_MAX_BYTES`). Chaque `rm` est best-effort (un échec n'interrompt pas le démarrage). Un **cache hit** met à jour le `mtime` du dossier (`fsp.utimes`), de sorte que le LRU suit l'usage réel et non la date de création.
 
-**[à confirmer]** : une purge du cache est-elle souhaitée ? Le README indique seulement que le cache permet une réouverture rapide du dossier.
+Conséquence : une entrée orpheline (vidéo modifiée, renommée ou supprimée) finit par être évincée par l'âge ou le plafond ; le cache ne croît plus indéfiniment. Les seuils 90 j / 500 Mo sont des constantes ajustables en tête de section vidéo de `main.js`.
 
 ## 5. Chemins système
 
@@ -145,9 +145,9 @@ Note sur `userData` : le `package.json` déclare `"name": "media-sorter"` et **p
 | Variable | Effet | Réf. |
 |---|---|---|
 | `FFMPEG_BIN` | Si définie, remplace le chemin du binaire ffmpeg embarqué (comportement du paquet `ffmpeg-static`). | `node_modules/ffmpeg-static/index.js` |
-| `LD_LIBRARY_PATH`, `GTK_PATH`, `QT_PLUGIN_PATH`, etc. | Lues pour l'assainissement des lancements externes (Linux) : supprimées, ou restaurées depuis `<NOM>_ORIG` quand elles existent. Liste complète : `main.js:225-236`. | `main.js:238-252` |
-| `XDG_DATA_DIRS`, `XDG_CONFIG_DIRS` | Restaurées depuis `_ORIG` si présentes pour les processus fils. | `main.js:236`, `246-249` |
-| `CHROME_DESKTOP` | Supprimée pour les processus fils. | `main.js:250` |
+| `LD_LIBRARY_PATH`, `GTK_PATH`, `QT_PLUGIN_PATH`, etc. | Lues pour l'assainissement des lancements externes (Linux) : supprimées, ou restaurées depuis `<NOM>_ORIG` quand elles existent. Liste complète : `main.js`. | `main.js` |
+| `XDG_DATA_DIRS`, `XDG_CONFIG_DIRS` | Restaurées depuis `_ORIG` si présentes pour les processus fils. | `main.js` |
+| `CHROME_DESKTOP` | Supprimée pour les processus fils. | `main.js` |
 
 L'application n'a **pas** de variable de configuration propre.
 
@@ -180,7 +180,7 @@ Détails de packaging et de signature : voir [build-and-deploy.md](build-and-dep
 ## 8. Ce qui n'est pas configurable
 
 - Le nombre d'images par vidéo, l'intervalle et la durée d'affichage (constantes §2.2).
-- Les raccourcis clavier (codés dans `renderer/renderer.js:696-744`).
-- Les applications d'édition : `GIMP` / `gimp` et `Shotcut` / `shotcut` sont codés en dur (`main.js:287-290`).
+- Les raccourcis clavier (codés dans `renderer/renderer.js`).
+- Les applications d'édition : `GIMP` / `gimp` et `Shotcut` / `shotcut` sont codés en dur (`main.js`).
 - Les types de fichiers au-delà des listes de §2.4.
 - La langue : l'interface est en anglais (libellés) et l'aide des raccourcis aussi ; les commentaires du code sont en anglais.

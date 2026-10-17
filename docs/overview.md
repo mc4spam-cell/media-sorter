@@ -59,7 +59,7 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
           │
           ▼
  Décider pour le fichier courant :
-   X  → corbeille système (immédiat, sans confirmation)
+   X  → corbeille système (confirmation par défaut ; désactivable dans ⚙ Préférences)
    R  → renommer (fenêtre de saisie)
    G  → GIMP (photo)     S → Shotcut (vidéo)
    (rien) → passer au suivant
@@ -71,9 +71,9 @@ Le fichier sélectionné reste à la même position après une suppression (la s
 
 | Terme | Définition dans le code |
 |---|---|
-| **Mode / kind** | `photos` ou `videos` (`state.kind`, `renderer/renderer.js:24`) |
-| **Item** | Fichier listé : `{ name, path, mtimeMs, rel }` (`main.js:174`) |
-| **Stop-motion** | Miniature vidéo qui alterne plusieurs images extraites à intervalle de 60 s, affichées 1 s chacune en boucle (`renderer/renderer.js:234-242`) |
-| **Maximize** | Option qui agrandit les photos en plein écran jusqu'à remplir la fenêtre (`renderer/renderer.js:370-378`) |
-| **Corbeille** | Corbeille du système, via le paquet `trash` (`main.js:189-193`) |
-| **Frames** | Images JPEG extraites d'une vidéo, mises en cache (`main.js:318-325`) |
+| **Mode / kind** | `photos` ou `videos` (`state.kind`, `renderer/renderer.js`) |
+| **Item** | Fichier listé : `{ name, path, mtimeMs, rel }` (`main.js`) |
+| **Stop-motion** | Miniature vidéo qui alterne plusieurs images extraites à intervalle de 60 s, affichées 1 s chacune en boucle (`renderer/renderer.js`) |
+| **Maximize** | Option qui agrandit les photos en plein écran jusqu'à remplir la fenêtre (`renderer/renderer.js`) |
+| **Corbeille** | Corbeille du système, via le paquet `trash` (`main.js`) |
+| **Frames** | Images JPEG extraites d'une vidéo, mises en cache (`main.js`) |

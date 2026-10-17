@@ -33,7 +33,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 
 | # | Sujet | Où | Question |
 |---|---|---|---|
-| 1 | Suppression sans confirmation | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | La touche X met à la corbeille immédiatement, sans confirmation ni annulation. Voulu ? |
+| 1 | ~~Suppression sans confirmation~~ — **résolu (2026-10-17)** | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | Toggle « Confirm before deleting » dans ⚙ Préférences, **activé par défaut** : X ouvre une confirmation (désactivable pour revenir à la suppression immédiate). |
 | 2 | ~~Modificateurs ignorés~~ — **validé : voulu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`… déclenchent la même action que la touche seule, **volontairement** : robustesse quand les affectations `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (VM, macOS vs Linux natif). |
 | 3 | ~~Vignette vidéo sans image~~ — **résolu (2026-10-17)** | [features.md FN-07](features.md#5-vignettes-grille) | Quand l'extraction aboutit à 0 image (erreur **ou** liste vide), la vignette affiche désormais « NO PREVIEW » au lieu d'un spinner infini (helper `markNoPreview`). |
 | 4 | ~~Vidéos longues~~ — **résolu (2026-10-17)** | [features.md FN-07](features.md#5-vignettes-grille) | Échantillonnage adaptatif : 20 images réparties sur toute la durée (intervalle `max(60 s, durée/20)`). Cadence 60 s inchangée ≤ 20 min, pas élargi au-delà. S'applique aux extractions futures (le cache existant n'est pas invalidé). |
@@ -43,7 +43,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | 8 | ~~Focus sur la liste « Sort »~~ — **résolu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | Après un changement de Sort / Subfolders / Maximize, le focus revient à la grille (`blur()`) → les flèches naviguent aussitôt dans les vignettes. |
 | 9 | ~~« Ouvrir avec » d'une extension inconnue~~ — **résolu (2026-10-17)** | [features.md FN-15](features.md#9-ouverture-depuis-le-système-ouvrir-avec) | Une extension non-média est désormais refusée (toast « Unsupported file type »), au lieu d'être classée en photo et ajoutée définitivement aux types (`isKnownExt`). |
 | 10 | ~~Plein écran des formats non décodables~~ — **résolu (2026-10-17)** | [features.md FN-08](features.md#6-visionneuse-plein-écran-photos) | Un tiff/heic en plein écran affiche désormais une notice centrée « Cannot preview · EXT » au lieu d'une image cassée (`showViewerError`). |
-| 11 | Purge du cache de vignettes | [config.md §4.3](config.md#43-nettoyage) | Aucune purge n'est implémentée ; le cache croît sans limite. Une purge est-elle souhaitée ? |
+| 11 | ~~Purge du cache de vignettes~~ — **résolu (2026-10-17)** | [config.md §4.3](config.md#43-nettoyage) | `pruneFrameCache` au démarrage : éviction par âge (90 j) puis LRU sous un plafond de 500 Mo ; le `mtime` est bumpé au cache hit. Le cache ne croît plus sans limite. |
 | 12 | ~~Formats `tif` et `heic`~~ — **résolu (2026-10-17)** | [config.md §2.4](config.md#24-types-de-fichiers) | `tiff`/`tif`/`heic` (non décodables par Chromium) retirés du menu Types **et** des associations système. Menu, associations, code et README désormais alignés ; prefs nettoyées au chargement. |
 | 13 | Mise à jour automatique | [build-and-deploy.md §5.4](build-and-deploy.md#54-mise-à-jour-automatique) | `latest-mac.yml` est généré mais rien ne le consomme. Une mise à jour automatique est-elle prévue ? |
 
@@ -51,7 +51,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 
 | # | Sujet | Où | Détail |
 |---|---|---|---|
-| 14 | Fermeture par fond bloquée | [features.md FN-09](features.md#fn-09-zoom-et-déplacement) | `dragMoved` n'est réinitialisé que si l'image est zoomée. Après un glisser suivi d'un retour à l'ajustement, un clic sur le fond peut ne pas fermer la visionneuse. |
+| 14 | ~~Fermeture par fond bloquée~~ — **résolu (2026-10-17)** | [features.md FN-09](features.md#fn-09-zoom-et-déplacement) | Un `mousedown` sur le fond de la visionneuse remet `dragMoved` à `false`, donc un clic sur le fond ferme de nouveau après un glisser. |
 | 15 | ~~Réponses de listage concurrentes~~ — **résolu (2026-10-17)** | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Jeton de requête (`listSeq`) sur `loadList` : une réponse obsolète est ignorée au lieu d'écraser la liste. `try/catch` ajouté. |
 | 16 | ~~Chemins non restreints côté processus principal~~ — **durci (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `file:trash/rename/open/openWith` valident que la cible est un fichier régulier existant (`assertRegularFile`). Pas de restriction au dossier choisi (volontaire : « Ouvrir avec » + multi-dossiers) ; renderer local de confiance. |
 | 17 | ~~Sandbox du renderer non explicite~~ — **résolu (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `sandbox: true` déclaré explicitement dans les `webPreferences`, pour ne plus dépendre du défaut d'Electron. Preload compatible (contextBridge/ipcRenderer). |
