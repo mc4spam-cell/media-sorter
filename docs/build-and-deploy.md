@@ -181,9 +181,9 @@ Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, com
 
 - Aucune logique d'auto-update dans `main.js` (aucune référence à `autoUpdater`).
 - `latest-mac.yml` et `app-update.yml` sont générés par electron-builder, mais **rien ne les consomme** dans l'application.
-- Conséquence : une nouvelle version doit être installée manuellement.
+- Conséquence : une nouvelle version s'installe manuellement (télécharger l'artefact depuis GitHub Releases).
 
-**[à confirmer]** : une mise à jour automatique est-elle prévue ?
+**Évolution possible** : brancher `electron-updater` sur ces fichiers permettrait des mises à jour en place (implique une application signée et notarisée). Listé dans [README.md](README.md#évolutions-possibles).
 
 ### 5.5 Artefacts non versionnés
 

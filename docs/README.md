@@ -3,7 +3,7 @@
 Spécifications fonctionnelles et techniques de **Media Sorter**, trieur de photos et vidéos en Electron.
 Version documentée : **1.1.0**.
 
-Ces documents sont **reconstitués à partir du code source** (`main.js`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`). Quand le code ne tranche pas un comportement, le point est marqué **[à confirmer]** et repris dans la liste ci-dessous.
+Ces documents sont **reconstitués à partir du code source** (`main.js`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`).
 
 ## Sommaire
 
@@ -15,59 +15,21 @@ Ces documents sont **reconstitués à partir du code source** (`main.js`, `prelo
 | [build-and-deploy.md](build-and-deploy.md) | Scripts npm, build macOS et Ubuntu, installation, versioning, publication |
 | [config.md](config.md) | Constantes, préférences persistées, formats, cache, chemins système, variables d'environnement |
 
-Les références de code sont au format `fichier:ligne`, relatives à la racine du projet.
+Les références au code citent le **fichier** et le **symbole** concerné (fonction, constante) ; elles ne portent pas de numéro de ligne, qui dériverait à mesure que le code évolue.
 
 ## Conventions
 
-- **`FN-xx`** : identifiant d'une fonctionnalité, pour citer un comportement lors d'une validation.
-- **[à confirmer]** : comportement non tranché par le code, ou divergence entre le code, le README et le build.
-- Les sections « Points de vigilance » signalent des risques observés, sans les corriger.
+- **`FN-xx`** : identifiant d'une fonctionnalité, pour citer un comportement de manière stable.
 
 ---
 
-## Points à confirmer
+## Évolutions possibles
 
-Liste consolidée, regroupée par nature. Le numéro sert de référence pour la validation.
+Pistes d'amélioration non encore réalisées, par effort croissant. Optionnelles : l'application est complète sans elles.
 
-### A. Choix de comportement à valider
-
-| # | Sujet | Où | Question |
-|---|---|---|---|
-| 1 | ~~Suppression sans confirmation~~ — **résolu (2026-10-17)** | [features.md FN-12](features.md#fn-12-mise-à-la-corbeille-touche-x) | Toggle « Confirm before deleting » dans ⚙ Préférences, **activé par défaut** : X ouvre une confirmation (désactivable pour revenir à la suppression immédiate). |
-| 2 | ~~Modificateurs ignorés~~ — **validé : voulu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | `Cmd+X`, `Ctrl+R`… déclenchent la même action que la touche seule, **volontairement** : robustesse quand les affectations `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (VM, macOS vs Linux natif). |
-| 3 | ~~Vignette vidéo sans image~~ — **résolu (2026-10-17)** | [features.md FN-07](features.md#5-vignettes-grille) | Quand l'extraction aboutit à 0 image (erreur **ou** liste vide), la vignette affiche désormais « NO PREVIEW » au lieu d'un spinner infini (helper `markNoPreview`). |
-| 4 | ~~Vidéos longues~~ — **résolu (2026-10-17)** | [features.md FN-07](features.md#5-vignettes-grille) | Échantillonnage adaptatif : 20 images réparties sur toute la durée (intervalle `max(60 s, durée/20)`). Cadence 60 s inchangée ≤ 20 min, pas élargi au-delà. S'applique aux extractions futures (le cache existant n'est pas invalidé). |
-| 5 | ~~Tri par nom en sous-dossiers~~ — **résolu (2026-10-17)** | [features.md FN-04](features.md#4-tri) | En mode sous-dossiers, le tri par nom s'applique au chemin relatif (`rel`) → fichiers regroupés par dossier. Non récursif inchangé. |
-| 6 | ~~Renommage et extension~~ — **résolu (2026-10-17)** | [features.md FN-13](features.md#fn-13-renommage-touche-r) | L'extension d'origine est désormais **toujours** conservée (ajoutée sauf si déjà présente, casse normalisée). Un point décoratif (`budget.2024`) n'écrase plus le `.jpg`. Changer l'extension via le renommage n'est plus possible. |
-| 7 | ~~Fichiers cachés et liens symboliques~~ — **résolu (2026-10-17)** | [features.md FN-05](features.md#fn-05-sous-dossiers) | Deux toggles ajoutés au panneau ⚙ Préférences : « Show hidden files » et « Follow symbolic links », **OFF par défaut** (cachés exclus, liens non suivis). Les boucles de symlinks sont évitées (`fs.realpath`). |
-| 8 | ~~Focus sur la liste « Sort »~~ — **résolu (2026-10-17)** | [features.md FN-17](features.md#10-raccourcis-clavier) | Après un changement de Sort / Subfolders / Maximize, le focus revient à la grille (`blur()`) → les flèches naviguent aussitôt dans les vignettes. |
-| 9 | ~~« Ouvrir avec » d'une extension inconnue~~ — **résolu (2026-10-17)** | [features.md FN-15](features.md#9-ouverture-depuis-le-système-ouvrir-avec) | Une extension non-média est désormais refusée (toast « Unsupported file type »), au lieu d'être classée en photo et ajoutée définitivement aux types (`isKnownExt`). |
-| 10 | ~~Plein écran des formats non décodables~~ — **résolu (2026-10-17)** | [features.md FN-08](features.md#6-visionneuse-plein-écran-photos) | Un tiff/heic en plein écran affiche désormais une notice centrée « Cannot preview · EXT » au lieu d'une image cassée (`showViewerError`). |
-| 11 | ~~Purge du cache de vignettes~~ — **résolu (2026-10-17)** | [config.md §4.3](config.md#43-nettoyage) | `pruneFrameCache` au démarrage : éviction par âge (90 j) puis LRU sous un plafond de 500 Mo ; le `mtime` est bumpé au cache hit. Le cache ne croît plus sans limite. |
-| 12 | ~~Formats `tif` et `heic`~~ — **résolu (2026-10-17)** | [config.md §2.4](config.md#24-types-de-fichiers) | `tiff`/`tif`/`heic` (non décodables par Chromium) retirés du menu Types **et** des associations système. Menu, associations, code et README désormais alignés ; prefs nettoyées au chargement. |
-| 13 | Mise à jour automatique | [build-and-deploy.md §5.4](build-and-deploy.md#54-mise-à-jour-automatique) | `latest-mac.yml` est généré mais rien ne le consomme. Une mise à jour automatique est-elle prévue ? |
-
-### B. Bugs ou risques probables à reproduire
-
-| # | Sujet | Où | Détail |
-|---|---|---|---|
-| 14 | ~~Fermeture par fond bloquée~~ — **résolu (2026-10-17)** | [features.md FN-09](features.md#fn-09-zoom-et-déplacement) | Un `mousedown` sur le fond de la visionneuse remet `dragMoved` à `false`, donc un clic sur le fond ferme de nouveau après un glisser. |
-| 15 | ~~Réponses de listage concurrentes~~ — **résolu (2026-10-17)** | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Jeton de requête (`listSeq`) sur `loadList` : une réponse obsolète est ignorée au lieu d'écraser la liste. `try/catch` ajouté. |
-| 16 | ~~Chemins non restreints côté processus principal~~ — **durci (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `file:trash/rename/open/openWith` valident que la cible est un fichier régulier existant (`assertRegularFile`). Pas de restriction au dossier choisi (volontaire : « Ouvrir avec » + multi-dossiers) ; renderer local de confiance. |
-| 17 | ~~Sandbox du renderer non explicite~~ — **résolu (2026-10-17)** | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `sandbox: true` déclaré explicitement dans les `webPreferences`, pour ne plus dépendre du défaut d'Electron. Preload compatible (contextBridge/ipcRenderer). |
-| 18 | ~~`read` et `set -e` dans le script Ubuntu~~ — **résolu (2026-10-17)** | [build-and-deploy.md §3.2](build-and-deploy.md#32-installation-par-script-recommandée) | `read -rp … \|\| true` : une entrée fermée ne tue plus le script sous `set -e` ; la valeur par défaut s'applique (N éditeurs, Y pour le `.deb`). |
-
-### C. Divergences entre documentation, code et artefacts
-
-| # | Sujet | Où | Détail |
-|---|---|---|---|
-| 19 | ~~DMG arm64 absent~~ — **résolu (2026-10-17)** | [build-and-deploy.md §4.3](build-and-deploy.md#43-artefacts-et-architecture) | Les 3 artefacts 1.1.0 sont bien publiés sur GitHub Releases (`arm64.dmg`, `intel.dmg`, `amd64.deb`), distincts et valides. Le `dist/` local n'en contenait que la sortie x64 (état partiel). Suffixes `-intel`/`-arm64` posés manuellement à l'upload ; nommage auto `-x64`/`-arm64` depuis le commit `8048843`. |
-| 20 | ~~Artefacts Linux absents~~ — **résolu (2026-10-17)** | [build-and-deploy.md §6](build-and-deploy.md#6-matrice-de-cibles) | Le `.deb` (`media-sorter_1.1.0_amd64.deb`) est présent sur GitHub Releases. Il est seulement absent du `dist/` local (build Linux fait sur une autre machine). |
-| 21 | ~~Dossier de données utilisateur~~ — **clarifié (2026-10-17)** | [config.md §5](config.md#5-chemins-système) | `app.getName()` → `media-sorter` (pas de `productName` racine), **cohérent dev/packagé**. Écart cosmétique nom technique ≠ nom affiché, laissé tel quel (option A) pour ne pas rendre orphelin le cache. |
-| 22 | Icône et clés `Info.plist` — **clés nettoyées (2026-10-17) ; icône laissée (A3)** | [build-and-deploy.md §4.4](build-and-deploy.md#44-métadonnées-du-bundle-infoplist) | Hook `afterPack` : supprime les descriptions caméra/micro/Bluetooth et passe `NSAllowsArbitraryLoads` à `false`. Icône propre non ajoutée (choix A3, documenté). |
-| 23 | ~~Procédure de release~~ — **résolu (2026-10-17)** | [build-and-deploy.md §5.3](build-and-deploy.md#53-procédure-de-sortie) | 3 scripts par architecture (`scripts/release-mac-x64.sh`, `release-mac-arm64.sh`, `release-linux.sh`) + lib commune : tag, release GitHub et upload idempotents. |
-| 24 | ~~README obsolète~~ — **résolu (2026-10-17)** | [build-and-deploy.md §7](build-and-deploy.md#7-points-dattention) | Version/artefacts corrigés (GitHub Releases + 3 packages), clic-lecture vidéo documenté, et `tiff`/`tif`/`heic` retirés partout (plus d'écart à lister). |
-| 25 | Performances sur gros dossiers — **atténué (2026-10-17)** | [architecture.md §6.2](architecture.md#62-rendu-de-la-grille) | Photos en `loading="lazy"` + `IntersectionObserver` qui limite extraction/animation vidéo au viewport et met les timers en pause hors écran. Pas de virtualisation du DOM (évolution possible si le nombre de nœuds devient limitant). |
+- **Icône propre de l'application.** L'app utilise aujourd'hui l'icône Electron par défaut ; déposer un `build/icon.icns` (et `build/icon.png` pour Linux) suffit à la personnaliser. Voir [build-and-deploy.md §4.4](build-and-deploy.md#44-métadonnées-du-bundle-infoplist).
+- **Virtualisation de la grille.** Le coût images/CPU est déjà borné (lazy-loading des photos + `IntersectionObserver` pour les vidéos) ; ne rendre que les cellules visibles apporterait un gain supplémentaire si le seul nombre de nœuds DOM venait à peser sur de très grands dossiers. Voir [architecture.md §6.2](architecture.md#62-rendu-de-la-grille).
+- **Mise à jour automatique.** `electron-builder` produit déjà `latest-mac.yml` ; brancher `electron-updater` permettrait des mises à jour en place (implique une application signée et notarisée). Voir [build-and-deploy.md §5.4](build-and-deploy.md#54-mise-à-jour-automatique).
 
 ## Hors périmètre actuel
 

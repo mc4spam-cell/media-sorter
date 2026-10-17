@@ -1,8 +1,7 @@
 # Spécifications fonctionnelles
 
-> Chaque fonctionnalité porte un identifiant (`FN-xx`) pour faciliter la validation.
-> Références `fichier:ligne` relatives à `/Users/mc/media-sorter`.
-> Les points **[à confirmer]** sont des comportements dont l'intention n'est pas explicite dans le code.
+> Chaque fonctionnalité porte un identifiant (`FN-xx`) pour la citer de façon stable.
+> Les références au code citent le fichier et le symbole concerné, sans numéro de ligne.
 
 ## 1. Vue générale de l'interface
 

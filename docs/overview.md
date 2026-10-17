@@ -1,7 +1,7 @@
 # Media Sorter : vue d'ensemble
 
 > Spécifications reconstituées à partir du code source (version **1.1.0**).
-> Les points marqués **[à confirmer]** ne sont pas tranchés par le code ; ils sont listés dans [README.md](README.md#points-à-confirmer).
+> Les pistes d'amélioration encore ouvertes sont listées dans [README.md](README.md#évolutions-possibles).
 
 ## 1. But de l'application
 
