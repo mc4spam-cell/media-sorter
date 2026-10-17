@@ -130,13 +130,15 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 | `CFBundleIdentifier` | `com.mc.mediasorter` | issu de `appId` |
 | `CFBundleShortVersionString` / `CFBundleVersion` | `1.1.0` | |
 | `LSMinimumSystemVersion` | `10.15` | valeur par défaut Electron, non déclarée dans `package.json` |
-| `CFBundleIconFile` | `electron.icns` | **icône par défaut d'Electron**, aucune icône propre n'est configurée (`build/` absent) |
+| `CFBundleIconFile` | `electron.icns` | **icône par défaut d'Electron** : aucune icône propre n'est configurée (`build/icon.icns` absent). Choix assumé pour l'instant (voir ci-dessous). |
 | `CFBundleDocumentTypes` | Image, rôle Viewer, extensions jpg/jpeg/png/webp/gif/bmp/avif | issu de `build.fileAssociations` (tiff/tif retirés le 2026-10-17 ; le DMG 1.1.0 publié, antérieur, les contient encore) |
-| `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSBluetoothAlwaysUsageDescription` | textes génériques | valeurs par défaut Electron, l'application n'utilise ni caméra, ni micro, ni Bluetooth |
-| `NSAppTransportSecurity.NSAllowsArbitraryLoads` | `true` | valeur par défaut Electron, l'application ne fait aucun appel réseau |
+| `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSBluetoothAlwaysUsageDescription` | **supprimées** | retirées par le hook `afterPack` (le 2026-10-17) ; l'app n'utilise ni caméra, ni micro, ni Bluetooth |
+| `NSAppTransportSecurity.NSAllowsArbitraryLoads` | **`false`** | resserré par le hook `afterPack` ; l'app ne fait aucun appel réseau (le DMG 1.1.0 publié, antérieur, a encore `true`) |
 | `NSHumanReadableCopyright` | « Copyright © 2026 mc » | dérivé de l'auteur du `package.json` |
 
-**[à confirmer]** : faut-il nettoyer ces clés héritées d'Electron et ajouter une icône propre (`build/icon.icns`, `build/icon.png`) ?
+**Nettoyage du plist (`build/afterPack.js`)** : un hook `afterPack` electron-builder (macOS uniquement) supprime les trois clés d'usage inutiles et remplace le bloc ATS par `{ NSAllowsArbitraryLoads: false }`, via `PlistBuddy`. `extendInfo` n'étant pas fiable pour *supprimer* une clé, le hook est la méthode retenue. S'applique aux **prochains** builds mac.
+
+**Icône (laissé tel quel — option A3)** : l'app utilise encore l'icône Electron par défaut. Pour fournir une icône propre plus tard : ajouter `build/icon.icns` (+ `build/icon.png` 512/1024 px pour Linux) et, au besoin, `build.icon` ; aucune autre config n'est requise (electron-builder détecte `build/icon.*`).
 
 ## 5. Versioning et publication
 

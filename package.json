@@ -22,6 +22,7 @@
     "appId": "com.mc.mediasorter",
     "productName": "Media Sorter",
     "asar": false,
+    "afterPack": "./build/afterPack.js",
     "files": [
       "main.js",
       "preload.js",
