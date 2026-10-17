@@ -213,8 +213,9 @@ Règles de garde (`renderer/renderer.js:696-703`) :
 
 **Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement.
 
+**Focus après un réglage de la barre (résolu le 2026-10-17)** : après un changement de **Sort**, **Subfolders** ou **Maximize**, le contrôle rend le focus à la grille (`blur()`), pour que les flèches naviguent aussitôt dans les vignettes au lieu d'agir sur le contrôle. *(Auparavant, le focus restait sur le `<select>`/la case et les flèches étaient détournées jusqu'à un clic sur la grille.)*
+
 **[à confirmer]** :
-- Après une modification de la liste « Sort », le focus reste sur ce champ et les flèches agissent sur la liste déroulante, pas sur la grille, tant qu'on ne clique pas sur la grille. À valider.
 - Le README indique « Esc back » ; en mode grille, Échap ne fait rien, ce qui est cohérent avec le code.
 
 ## 11. Aide

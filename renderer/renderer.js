@@ -655,6 +655,9 @@ $('sortBy').addEventListener('change', (e) => {
   state.sortBy = e.target.value;
   savePrefs();
   loadList();
+  // Hand focus back to the grid so the arrow keys navigate thumbnails again
+  // instead of cycling this dropdown's options.
+  e.target.blur();
 });
 $('sortDir').addEventListener('click', () => {
   state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
@@ -668,6 +671,7 @@ $('recursive').addEventListener('change', (e) => {
   state.recursive = e.target.checked;
   savePrefs();
   loadList();
+  e.target.blur(); // return focus to the grid (arrow keys navigate thumbnails)
 });
 
 // Maximize photos in fullscreen
@@ -675,6 +679,7 @@ $('maximize').addEventListener('change', (e) => {
   state.maximize = e.target.checked;
   savePrefs();
   if (state.fullscreen) refitViewer();
+  e.target.blur(); // return focus to the grid (arrow keys navigate thumbnails)
 });
 
 // Types popover open/close
