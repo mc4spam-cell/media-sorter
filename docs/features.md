@@ -98,7 +98,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js:166-187`, `main.js:3
 ### FN-08 Affichage
 - Ouverte par **clic** sur une vignette photo, ou par **Entrée** (`renderer/renderer.js:178-180`, `716-717`).
 - Fond noir, image centrée, légende « nom · position/total » en bas (`renderer/renderer.js:305-311`).
-- **[à confirmer]** : le repli « badge d'extension » ne s'applique qu'à la grille (`renderer/renderer.js:159-165`). Un format non décodable (tiff, heic) ouvert en plein écran n'affiche qu'une image cassée, sans indication.
+- Un format que Chromium ne sait pas décoder (tiff, heic…) ouvert en plein écran affiche une **notice centrée « Cannot preview · <EXT> »** (l'image cassée est masquée), en cohérence avec le badge d'extension de la grille. La notice disparaît dès qu'on navigue vers une image affichable (`renderer/renderer.js`, `showViewerError` / `hideViewerError`). *(Depuis le 2026-10-17 ; auparavant, seule une image cassée s'affichait, sans indication.)*
 - Quitter : **Échap** ou clic sur le fond noir (pas sur l'image) (`renderer/renderer.js:653-655`).
 - Ajustement (`applyFit`, `renderer/renderer.js:370-378`) :
   - par défaut, l'image est réduite pour tenir dans la fenêtre, **sans jamais dépasser sa taille native** ;

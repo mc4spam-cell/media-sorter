@@ -91,6 +91,7 @@ const gridEl = $('grid');
 const viewerEl = $('viewer');
 const viewerImg = $('viewerImg');
 const viewerCaption = $('viewerCaption');
+const viewerError = $('viewerError');
 const renameModal = $('renameModal');
 const renameInput = $('renameInput');
 const prefsModal = $('prefsModal');
@@ -331,10 +332,25 @@ async function openWithApp(app) {
   }
 }
 
+// Formats Chromium can't decode (tiff, heic…) fail to load in the viewer the
+// same way they do in the grid. Show a centered notice instead of a broken
+// image, mirroring the grid's extension badge.
+function showViewerError(item) {
+  const ext = (item.name.split('.').pop() || '').toUpperCase();
+  viewerError.textContent = ext ? `Cannot preview · ${ext}` : 'Cannot preview';
+  viewerError.classList.remove('hidden');
+  viewerImg.style.visibility = 'hidden';
+}
+function hideViewerError() {
+  viewerError.classList.add('hidden');
+  viewerImg.style.visibility = '';
+}
+
 function updateViewer() {
   const item = state.items[state.selected];
   if (!item) return closeViewer();
   resetZoom();
+  hideViewerError();
   viewerImg.src = api.toFileURL(item.path);
   viewerCaption.textContent = `${item.name}  ·  ${state.selected + 1}/${state.items.length}`;
 }
@@ -412,7 +428,14 @@ function refitViewer() {
   measureBase();
 }
 
-viewerImg.addEventListener('load', refitViewer);
+viewerImg.addEventListener('load', () => {
+  hideViewerError();
+  refitViewer();
+});
+viewerImg.addEventListener('error', () => {
+  const item = state.items[state.selected];
+  if (state.fullscreen && item) showViewerError(item);
+});
 window.addEventListener('resize', () => {
   if (state.fullscreen) refitViewer();
 });

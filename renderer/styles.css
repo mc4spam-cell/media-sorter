@@ -244,6 +244,20 @@ body {
   transform-origin: 0 0;
   will-change: transform;
 }
+.viewer-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--muted);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 16px 22px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
 .viewer .caption {
   position: absolute;
   bottom: 16px;
