@@ -27,6 +27,7 @@ const state = {
   fullscreen: false,
   recursive: false,
   maximize: false, // upscale photos to fill the window in fullscreen
+  confirmDelete: true, // ask before sending a file to the trash (X key)
   sortBy: 'name', // 'name' | 'mtime'
   sortDir: 'asc', // 'asc' | 'desc'
   types: {
@@ -44,6 +45,7 @@ function savePrefs() {
       JSON.stringify({
         recursive: state.recursive,
         maximize: state.maximize,
+        confirmDelete: state.confirmDelete,
         sortBy: state.sortBy,
         sortDir: state.sortDir,
         types: { photos: [...state.types.photos], videos: [...state.types.videos] },
@@ -60,6 +62,7 @@ function loadPrefs() {
   }
   if (typeof p.recursive === 'boolean') state.recursive = p.recursive;
   if (typeof p.maximize === 'boolean') state.maximize = p.maximize;
+  if (typeof p.confirmDelete === 'boolean') state.confirmDelete = p.confirmDelete;
   if (p.sortBy === 'name' || p.sortBy === 'mtime') state.sortBy = p.sortBy;
   if (p.sortDir === 'asc' || p.sortDir === 'desc') state.sortDir = p.sortDir;
   if (p.types) {
@@ -84,6 +87,8 @@ const viewerImg = $('viewerImg');
 const viewerCaption = $('viewerCaption');
 const renameModal = $('renameModal');
 const renameInput = $('renameInput');
+const prefsModal = $('prefsModal');
+const confirmModal = $('confirmModal');
 const toastEl = $('toast');
 
 // ---------- Helpers ----------
@@ -100,7 +105,11 @@ function clearFrameTimers() {
 }
 
 function isModalOpen() {
-  return !renameModal.classList.contains('hidden');
+  return (
+    !renameModal.classList.contains('hidden') ||
+    !prefsModal.classList.contains('hidden') ||
+    !confirmModal.classList.contains('hidden')
+  );
 }
 
 // ---------- Loading ----------
@@ -448,7 +457,16 @@ viewerImg.addEventListener('dblclick', (e) => {
 });
 
 // ---------- Trash ----------
-async function trashCurrent() {
+// Entry point for the X key / delete action. Honors the "Confirm before
+// deleting" preference: when on, ask first; when off, trash straight away.
+function trashCurrent() {
+  const item = state.items[state.selected];
+  if (!item) return;
+  if (state.confirmDelete) openConfirmDelete(item);
+  else doTrash();
+}
+
+async function doTrash() {
   const item = state.items[state.selected];
   if (!item) return;
   try {
@@ -656,6 +674,37 @@ $('helpBtn').addEventListener('click', openHelp);
 $('helpClose').addEventListener('click', closeHelp);
 helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelp(); });
 
+// ---------- Preferences modal ----------
+function openPrefs() {
+  $('confirmDelete').checked = state.confirmDelete;
+  prefsModal.classList.remove('hidden');
+  $('confirmDelete').focus();
+}
+function closePrefs() { prefsModal.classList.add('hidden'); }
+$('prefsBtn').addEventListener('click', openPrefs);
+$('prefsClose').addEventListener('click', closePrefs);
+prefsModal.addEventListener('click', (e) => { if (e.target === prefsModal) closePrefs(); });
+$('confirmDelete').addEventListener('change', (e) => {
+  state.confirmDelete = e.target.checked;
+  savePrefs();
+});
+
+// ---------- Delete confirmation modal ----------
+function openConfirmDelete(item) {
+  $('confirmText').textContent = `“${item.name}” will be moved to the system trash.`;
+  confirmModal.classList.remove('hidden');
+  // Focus the confirm button so Enter activates it natively (no double-fire
+  // with the global keydown handler) and Esc still cancels.
+  $('confirmOk').focus();
+}
+function closeConfirmDelete() { confirmModal.classList.add('hidden'); }
+$('confirmCancel').addEventListener('click', closeConfirmDelete);
+$('confirmOk').addEventListener('click', () => {
+  closeConfirmDelete();
+  doTrash();
+});
+confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirmDelete(); });
+
 // Click the black background to close — but not after a pan drag, and not when
 // clicking the image itself.
 viewerEl.addEventListener('click', (e) => {
@@ -705,6 +754,15 @@ document.addEventListener('keydown', (e) => {
   if (!helpModal.classList.contains('hidden')) {
     if (e.key === 'Escape') closeHelp();
     return; // shortcuts window open: swallow other keys
+  }
+  if (!confirmModal.classList.contains('hidden')) {
+    // Enter is handled natively by the focused confirm button (see openConfirmDelete).
+    if (e.key === 'Escape') closeConfirmDelete();
+    return;
+  }
+  if (!prefsModal.classList.contains('hidden')) {
+    if (e.key === 'Escape') closePrefs();
+    return;
   }
   if (isModalOpen()) return; // modal handles its own keys
   // Don't hijack keys while a form control (sort menu, checkboxes) is focused.

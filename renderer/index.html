@@ -35,6 +35,7 @@
           <div id="typesPopover" class="popover hidden"></div>
         </div>
 
+        <button id="prefsBtn" class="iconbtn" title="Preferences" aria-haspopup="dialog">⚙</button>
         <button id="helpBtn" class="iconbtn" title="Keyboard shortcuts" aria-haspopup="dialog">ⓘ</button>
       </div>
 
@@ -58,6 +59,38 @@
         <div class="modal-actions">
           <button id="renameCancel">Cancel</button>
           <button id="renameOk" class="primary">Rename</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preferences -->
+    <div id="prefsModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-title">Preferences</div>
+        <div class="pref-row">
+          <div class="pref-label">
+            <div>Confirm before deleting</div>
+            <div class="hint">Ask before sending a file to the trash (X key).</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="confirmDelete" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button id="prefsClose" class="primary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation -->
+    <div id="confirmModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-title">Send to trash?</div>
+        <div id="confirmText" class="confirm-text"></div>
+        <div class="modal-actions">
+          <button id="confirmCancel">Cancel</button>
+          <button id="confirmOk" class="primary danger">Send to trash</button>
         </div>
       </div>
     </div>
