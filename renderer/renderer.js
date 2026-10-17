@@ -513,6 +513,66 @@ function setKind(kind) {
   loadList();
 }
 
+// ---------- Open a specific file (OS "Open with") ----------
+// The preload sandbox has no Node path module, so parse POSIX paths by hand.
+function pathDir(p) {
+  const s = String(p).replace(/\/+$/, '');
+  const i = s.lastIndexOf('/');
+  return i <= 0 ? '/' : s.slice(0, i);
+}
+function pathBase(p) {
+  const s = String(p).replace(/\/+$/, '');
+  return s.slice(s.lastIndexOf('/') + 1);
+}
+function extOfName(name) {
+  const i = name.lastIndexOf('.');
+  return i < 0 ? '' : name.slice(i + 1).toLowerCase();
+}
+function kindForExt(ext) {
+  for (const k of ['photos', 'videos']) {
+    if (TYPE_SETS[k].default.includes(ext) || TYPE_SETS[k].extra.includes(ext)) return k;
+  }
+  return 'photos';
+}
+
+// Load the file's folder as the working folder, then select and show the file so
+// the arrow keys walk its siblings.
+async function openPath(filePath) {
+  if (!filePath) return;
+  const dir = pathDir(filePath);
+  const name = pathBase(filePath);
+  const ext = extOfName(name);
+  const kind = kindForExt(ext);
+
+  // Ensure this extension is enabled, or neither the file nor its siblings list.
+  if (ext && !state.types[kind].has(ext)) {
+    state.types[kind].add(ext);
+    savePrefs();
+  }
+
+  // Switch to the matching mode (photos/videos) and folder.
+  state.kind = kind;
+  closeViewer();
+  $('tabPhotos').classList.toggle('active', kind === 'photos');
+  $('tabVideos').classList.toggle('active', kind === 'videos');
+  buildTypesPopover();
+
+  state.folder = dir;
+  $('folderPath').textContent = dir;
+  await loadList();
+
+  // Select the opened file (fall back to name if the exact path doesn't match).
+  let idx = state.items.findIndex((it) => it.path === filePath);
+  if (idx < 0) idx = state.items.findIndex((it) => it.name === name);
+  if (idx >= 0) {
+    setSelected(idx);
+    if (kind === 'photos') openViewer();
+    else scrollSelectedIntoView();
+  } else {
+    toast('File not found in folder: ' + name);
+  }
+}
+
 // ---------- File-type popover ----------
 const typesBtn = $('typesBtn');
 const typesPopover = $('typesPopover');
@@ -581,6 +641,13 @@ document.addEventListener('click', () => typesPopover.classList.add('hidden'));
 $('renameCancel').addEventListener('click', closeRename);
 $('renameOk').addEventListener('click', confirmRename);
 
+const helpModal = $('helpModal');
+function openHelp() { helpModal.classList.remove('hidden'); }
+function closeHelp() { helpModal.classList.add('hidden'); }
+$('helpBtn').addEventListener('click', openHelp);
+$('helpClose').addEventListener('click', closeHelp);
+helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelp(); });
+
 // Click the black background to close — but not after a pan drag, and not when
 // clicking the image itself.
 viewerEl.addEventListener('click', (e) => {
@@ -627,6 +694,10 @@ renameInput.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (!helpModal.classList.contains('hidden')) {
+    if (e.key === 'Escape') closeHelp();
+    return; // shortcuts window open: swallow other keys
+  }
   if (isModalOpen()) return; // modal handles its own keys
   // Don't hijack keys while a form control (sort menu, checkboxes) is focused.
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
@@ -679,4 +750,13 @@ $('sortDir').textContent = state.sortDir === 'asc' ? '↑' : '↓';
 $('recursive').checked = state.recursive;
 $('maximize').checked = state.maximize;
 buildTypesPopover();
+
+// Open a file handed over by the OS "Open with" — at launch (pulled once) and
+// for any further files while the app stays running (pushed from main).
+if (api && typeof api.getPendingFile === 'function') {
+  api.getPendingFile().then((f) => { if (f) openPath(f); }).catch(() => {});
+}
+if (api && typeof api.onOpenFile === 'function') {
+  api.onOpenFile((f) => { if (f) openPath(f); });
+}
 })();

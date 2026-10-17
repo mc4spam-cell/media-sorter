@@ -34,6 +34,8 @@
           <button id="typesBtn" class="iconbtn">Types ▾</button>
           <div id="typesPopover" class="popover hidden"></div>
         </div>
+
+        <button id="helpBtn" class="iconbtn" title="Keyboard shortcuts" aria-haspopup="dialog">ⓘ</button>
       </div>
 
       <div id="folderPath" class="path">No folder selected</div>
@@ -62,15 +64,25 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <footer id="help" class="help">
-      <span>← → navigate</span>
-      <span><b>Enter</b> fullscreen</span>
-      <span><b>Esc</b> back</span>
-      <span><b>X</b> trash</span>
-      <span><b>R</b> rename</span>
-      <span><b>G</b> open in GIMP (photos)</span>
-      <span><b>S</b> open in Shotcut (videos)</span>
-    </footer>
+    <!-- Keyboard shortcuts -->
+    <div id="helpModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-title">Keyboard shortcuts</div>
+        <dl class="shortcuts">
+          <dt>← →&nbsp;&nbsp;↑ ↓</dt><dd>Navigate</dd>
+          <dt><b>Enter</b></dt><dd>Fullscreen (photo) / Play (video)</dd>
+          <dt><b>Esc</b></dt><dd>Back</dd>
+          <dt><b>X</b></dt><dd>Send to trash</dd>
+          <dt><b>R</b></dt><dd>Rename</dd>
+          <dt><b>G</b></dt><dd>Open in GIMP (photos)</dd>
+          <dt><b>S</b></dt><dd>Open in Shotcut (videos)</dd>
+          <dt><b>0</b></dt><dd>Reset zoom (fullscreen)</dd>
+        </dl>
+        <div class="modal-actions">
+          <button id="helpClose" class="primary">Close</button>
+        </div>
+      </div>
+    </div>
 
     <script src="renderer.js"></script>
   </body>

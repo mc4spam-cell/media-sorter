@@ -23,6 +23,11 @@ async function getTrash() {
   return trashFn;
 }
 
+let mainWindow = null;
+// A file the app was asked to open (via the OS "Open with" / file association)
+// before a window was ready to receive it. The renderer pulls it once on init.
+let pendingFile = null;
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
@@ -35,6 +40,7 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+  mainWindow = win;
 
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
@@ -43,17 +49,77 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     win.webContents.setVisualZoomLevelLimits(1, 1);
   });
+
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
+  });
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+// Find the first CLI argument that is an existing file — the path a file manager
+// passes when launching via "Open with". Skips the executable, the "." dev arg
+// and any --flags. Returns an absolute path, or null.
+function fileArgFrom(argv) {
+  for (const a of (argv || []).slice(1)) {
+    if (!a || a.startsWith('-')) continue;
+    try {
+      if (fs.statSync(a).isFile()) return path.resolve(a);
+    } catch {}
+  }
+  return null;
+}
+
+// Hand a file to the renderer, waiting for the page to finish loading if needed.
+function sendOpenFile(filePath) {
+  if (!mainWindow || !filePath) return;
+  const wc = mainWindow.webContents;
+  const send = () => wc.send('open-file', filePath);
+  if (wc.isLoading()) wc.once('did-finish-load', send);
+  else send();
+}
+
+// macOS delivers "Open with" through this event, which can fire before the app
+// is ready. Buffer it until a window exists; the renderer then pulls it.
+app.on('open-file', (e, p) => {
+  e.preventDefault();
+  if (mainWindow) sendOpenFile(p);
+  else pendingFile = p;
 });
+
+// Single instance: a second "Open with" launch should reuse the running window
+// (Linux/Windows pass the file on the new process's argv).
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_e, argv) => {
+    const f = fileArgFrom(argv);
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      if (f) sendOpenFile(f);
+    }
+  });
+
+  app.whenReady().then(() => {
+    // Initial launch file from the command line (Linux/Windows); macOS may have
+    // already set pendingFile via the open-file event above.
+    if (!pendingFile) pendingFile = fileArgFrom(process.argv);
+    createWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Renderer pulls the launch file once, on init (consumes it).
+ipcMain.handle('app:getPendingFile', () => {
+  const f = pendingFile;
+  pendingFile = null;
+  return f;
 });
 
 // ---------- IPC: folder picker ----------

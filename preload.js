@@ -20,4 +20,8 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (filePath) => ipcRenderer.invoke('file:open', filePath),
   openWith: (filePath, app) => ipcRenderer.invoke('file:openWith', filePath, app),
   videoFrames: (filePath, mtimeMs) => ipcRenderer.invoke('video:frames', filePath, mtimeMs),
+  // File passed at launch via the OS "Open with" (pulled once on init).
+  getPendingFile: () => ipcRenderer.invoke('app:getPendingFile'),
+  // Files opened while the app is already running (pushed from main).
+  onOpenFile: (cb) => ipcRenderer.on('open-file', (_e, p) => cb(p)),
 });

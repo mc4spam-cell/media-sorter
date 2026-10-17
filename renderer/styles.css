@@ -322,21 +322,27 @@ body {
   z-index: 70;
 }
 
-/* ---------- Help footer ---------- */
-.help {
-  flex: 0 0 auto;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  background: var(--bar);
-  border-top: 1px solid #000;
-  font-size: 12px;
-  color: var(--muted);
+/* ---------- Keyboard shortcuts list ---------- */
+.shortcuts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 11px 18px;
+  align-items: baseline;
 }
-.help b {
+.shortcuts dt {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 13px;
   color: #ccc;
+}
+.shortcuts dt b {
+  color: #ccc;
+}
+.shortcuts dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .hidden {
