@@ -174,15 +174,14 @@ Les déclencheurs sont :
 - **Linux / autres** : un argument de ligne de commande au lancement (`main.js:123`) ou une seconde instance (`main.js:111-118`) ;
 - Les URI `file://` sont acceptées (`main.js:58-70`) : les gestionnaires de fichiers passent parfois une URI au lieu d'un chemin.
 
-Comportement côté interface (`renderer/renderer.js:540-574`) :
-1. l'extension du fichier est ajoutée aux types actifs du mode concerné si elle ne l'était pas, et les préférences sont sauvegardées ;
+Comportement côté interface (`renderer/renderer.js`) :
+0. si l'extension n'appartient **pas** à un type média connu (photo ou vidéo), l'ouverture est **refusée** avec un toast « Unsupported file type (.xyz) » et rien d'autre ne se produit (`isKnownExt`). *(Depuis le 2026-10-17 ; auparavant, une extension inconnue était classée en Photos et ajoutée **définitivement** aux types photo.)*
+1. sinon, l'extension (média connue) est ajoutée aux types actifs du mode concerné si elle ne l'était pas, et les préférences sont sauvegardées ;
 2. le mode correspondant (Photos ou Videos) est activé ;
 3. le dossier parent devient le dossier de travail, et la liste est chargée ;
 4. le fichier est sélectionné (par chemin complet, sinon par nom) ;
 5. en Photos, la visionneuse s'ouvre ; en Videos, le fichier est sélectionné et visible, sans être lancé ;
 6. si le fichier n'est pas trouvé dans la liste, le message « File not found in folder: … » s'affiche.
-
-**[à confirmer]** : une extension inconnue passée par ce chemin (ex. `.txt`) est classée en Photos et ajoutée à la liste des extensions photo. Les associations de fichiers déclarées ne concernent que les images (`package.json`, section `build.fileAssociations`), donc le cas est théorique.
 
 ### FN-16 Instance unique
 - Une seule fenêtre à la fois (`main.js:107`).

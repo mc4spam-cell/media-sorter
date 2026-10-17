@@ -581,6 +581,17 @@ function kindForExt(ext) {
   return 'photos';
 }
 
+// Whether an extension belongs to a known photo/video type set. Used to reject
+// "Open with" on arbitrary non-media files instead of mislabeling them photos.
+function isKnownExt(ext) {
+  return (
+    !!ext &&
+    ['photos', 'videos'].some(
+      (k) => TYPE_SETS[k].default.includes(ext) || TYPE_SETS[k].extra.includes(ext)
+    )
+  );
+}
+
 // Load the file's folder as the working folder, then select and show the file so
 // the arrow keys walk its siblings.
 async function openPath(filePath) {
@@ -588,6 +599,14 @@ async function openPath(filePath) {
   const dir = pathDir(filePath);
   const name = pathBase(filePath);
   const ext = extOfName(name);
+
+  // "Open with" can hand us any file. Refuse non-media extensions rather than
+  // classifying them as photos and polluting the saved Types set.
+  if (!isKnownExt(ext)) {
+    toast(`Unsupported file type${ext ? ' (.' + ext + ')' : ''}`);
+    return;
+  }
+
   const kind = kindForExt(ext);
 
   // Ensure this extension is enabled, or neither the file nor its siblings list.
