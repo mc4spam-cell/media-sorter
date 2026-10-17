@@ -67,7 +67,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | 22 | Icône et clés `Info.plist` — **clés nettoyées (2026-10-17) ; icône laissée (A3)** | [build-and-deploy.md §4.4](build-and-deploy.md#44-métadonnées-du-bundle-infoplist) | Hook `afterPack` : supprime les descriptions caméra/micro/Bluetooth et passe `NSAllowsArbitraryLoads` à `false`. Icône propre non ajoutée (choix A3, documenté). |
 | 23 | ~~Procédure de release~~ — **résolu (2026-10-17)** | [build-and-deploy.md §5.3](build-and-deploy.md#53-procédure-de-sortie) | 3 scripts par architecture (`scripts/release-mac-x64.sh`, `release-mac-arm64.sh`, `release-linux.sh`) + lib commune : tag, release GitHub et upload idempotents. |
 | 24 | ~~README obsolète~~ — **résolu (2026-10-17)** | [build-and-deploy.md §7](build-and-deploy.md#7-points-dattention) | Version/artefacts corrigés (GitHub Releases + 3 packages), clic-lecture vidéo documenté, et `tiff`/`tif`/`heic` retirés partout (plus d'écart à lister). |
-| 25 | Affichage des performances | [architecture.md §6.2](architecture.md#62-rendu-de-la-grille) | Pas de virtualisation de la grille. Tenue sur de grands dossiers non mesurée. |
+| 25 | Performances sur gros dossiers — **atténué (2026-10-17)** | [architecture.md §6.2](architecture.md#62-rendu-de-la-grille) | Photos en `loading="lazy"` + `IntersectionObserver` qui limite extraction/animation vidéo au viewport et met les timers en pause hors écran. Pas de virtualisation du DOM (évolution possible si le nombre de nœuds devient limitant). |
 
 ## Hors périmètre actuel
 

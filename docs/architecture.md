@@ -135,18 +135,20 @@ Le fichier est enveloppé dans une IIFE protégée contre une double évaluation
 
 ### 6.2 Rendu de la grille
 
-- `renderGrid` vide le conteneur et recrée une cellule par élément (`renderer/renderer.js:138-190`). Il n'y a **pas de virtualisation** : tous les fichiers listés sont dans le DOM. **[à confirmer]** : tenue en performance sur des dossiers de plusieurs milliers de fichiers.
-- Toute action qui modifie la liste (renommage, suppression, changement de tri ou de types) déclenche un nouveau rendu complet.
+- `renderGrid` vide le conteneur et recrée une cellule par élément (`renderer/renderer.js`). Il n'y a **pas de virtualisation du DOM** : tous les fichiers listés sont dans le DOM (choix assumé ; la virtualisation reste une évolution possible si le nombre de nœuds devient limitant). En revanche, le **travail coûteux est différé au viewport** (le 2026-10-17) :
+  - **Photos** : `<img loading="lazy">` — les images hors écran ne sont pas décodées tant qu'elles n'approchent pas du viewport.
+  - **Vidéos** : un `IntersectionObserver` (root = la grille, `rootMargin` 400 px) ne lance l'**extraction** ffmpeg **et** l'**animation** stop-motion que pour les tuiles proches de l'écran, et **met en pause le timer** d'une tuile qui sort de l'écran (reprise à son retour, frames déjà en cache). Un dossier de centaines de vidéos n'extrait donc plus tout d'un coup et ne fait plus tourner des centaines de timers permanents.
+- Toute action qui modifie la liste (renommage, suppression, changement de tri ou de types) déclenche un nouveau rendu complet (`resetGrid` reconnecte l'observer et stoppe les timers précédents).
 
 ### 6.3 Frames vidéo : file d'attente
 
-`queueFrames` / `pump` limitent à **2** extractions concurrentes côté renderer (`renderer/renderer.js:194-212`). Chaque tâche vérifie que sa cellule est encore connectée au DOM avant de travailler (`renderer/renderer.js:216`), ce qui évite les travaux inutiles après un re-rendu.
+`queueExtract` / `pump` limitent à **2** extractions concurrentes côté renderer. L'extraction n'est mise en file que lorsqu'une tuile vidéo entre dans la zone de l'observer (voir §6.2). Chaque tâche vérifie que sa cellule est encore connectée au DOM avant et après l'`await` (`renderer/renderer.js`), ce qui évite tout travail ou écriture DOM après un re-rendu.
 
 ### 6.4 Points de vigilance
 
 - **Jeton de requête sur `loadList`** (`renderer/renderer.js`, `listSeq`) : chaque appel incrémente un compteur et ne met à jour `state.items` / la grille que si son jeton est toujours le plus récent au retour du `await`. Un listage lent qui résout après un appel plus récent est ainsi **ignoré**, ce qui évite qu'une réponse obsolète écrase la liste courante (changement de tri rapide, ou de dossier pendant un scan récursif long). L'appel est aussi protégé par un `try/catch` (toast « List failed » si non supplanté). *(Résolu le 2026-10-17.)*
-- **Re-rendu complet après chaque action** : la suppression et le renommage appellent `renderGrid()` (`renderer/renderer.js:467`, `498`), ce qui relance toute la file des vignettes vidéo. Les frames sont en cache, mais chaque vignette repasse par l'IPC `video:frames`.
-- **Pas de virtualisation** : la grille crée un élément DOM par fichier listé (voir §6.2).
+- **Re-rendu complet après chaque action** : la suppression et le renommage appellent `renderGrid()`, qui réinitialise l'observer. Seules les tuiles vidéo re-rendues et visibles relancent l'IPC `video:frames` (frames en cache) — plus toute la liste.
+- **Pas de virtualisation du DOM** : la grille crée un élément DOM par fichier listé (voir §6.2). Le coût images/CPU est désormais borné par le lazy-loading et l'observer ; le nombre de **nœuds** reste proportionnel à la taille du dossier (évolution « virtualisation » documentée comme option si nécessaire).
 
 ## 7. Flux de données principaux
 

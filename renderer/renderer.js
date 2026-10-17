@@ -87,8 +87,11 @@ function activeExts() {
   return [...state.types[state.kind]];
 }
 
-// Active stop-motion timers, keyed by item path, so we can clear on re-render.
-const frameTimers = new Map();
+// Deferred per-cell video work (extraction + stop-motion), gated by an
+// IntersectionObserver so a folder of hundreds of videos doesn't extract every
+// file up front or run hundreds of timers at once. Photos use loading="lazy".
+const cellWork = new Map(); // cell element -> video work record
+let gridObserver = null;
 
 // ---------- DOM ----------
 const $ = (id) => document.getElementById(id);
@@ -111,9 +114,14 @@ function toast(msg) {
   toast._t = setTimeout(() => toastEl.classList.add('hidden'), 1800);
 }
 
-function clearFrameTimers() {
-  for (const t of frameTimers.values()) clearInterval(t);
-  frameTimers.clear();
+function stopCell(st) {
+  if (st && st.timer) {
+    clearInterval(st.timer);
+    st.timer = null;
+  }
+}
+function stopAllTimers() {
+  for (const st of cellWork.values()) stopCell(st);
 }
 
 function isModalOpen() {
@@ -147,7 +155,7 @@ let listSeq = 0;
 async function loadList() {
   if (!state.folder) return;
   const seq = ++listSeq;
-  clearFrameTimers();
+  stopAllTimers();
   let items;
   try {
     items = await api.list(state.folder, {
@@ -171,8 +179,21 @@ async function loadList() {
 }
 
 // ---------- Grid rendering ----------
+// Tear down the previous render's deferred work and start a fresh observer.
+function resetGrid() {
+  if (gridObserver) gridObserver.disconnect();
+  stopAllTimers();
+  cellWork.clear();
+  queue.length = 0;
+  gridObserver = new IntersectionObserver(onIntersect, {
+    root: gridEl,
+    rootMargin: '400px 0px', // start work a bit before a tile scrolls in
+    threshold: 0,
+  });
+}
+
 function renderGrid() {
-  clearFrameTimers();
+  resetGrid();
   gridEl.innerHTML = '';
   state.items.forEach((item, idx) => {
     const cell = document.createElement('div');
@@ -188,10 +209,12 @@ function renderGrid() {
     const img = document.createElement('img');
     img.alt = item.name;
 
-    let isVideo = false;
     if (state.kind === 'photos') {
+      // Native lazy-loading: thousands of off-screen photos aren't decoded
+      // until they approach the viewport.
+      img.loading = 'lazy';
       img.src = api.toFileURL(item.path);
-      // Some formats (tiff, heic) can't be rendered by Chromium — show the ext.
+      // Some files can't be decoded (corrupt / unexpected codec) — show the ext.
       img.addEventListener('error', () => {
         if (cell.querySelector('.badge')) return;
         const b = document.createElement('div');
@@ -201,13 +224,23 @@ function renderGrid() {
       });
       cell.appendChild(img);
     } else {
-      isVideo = true;
       cell.classList.add('loading');
       const badge = document.createElement('div');
       badge.className = 'badge';
       badge.textContent = 'VIDEO';
       cell.appendChild(img);
       cell.appendChild(badge);
+      // Extraction + animation are deferred to the observer (near-viewport only).
+      cellWork.set(cell, {
+        item,
+        img,
+        cell,
+        started: false,
+        frames: null,
+        timer: null,
+        frameIndex: 0,
+        visible: false,
+      });
     }
 
     cell.appendChild(label);
@@ -217,30 +250,45 @@ function renderGrid() {
       else playCurrent();
     });
     gridEl.appendChild(cell);
-
-    // Kick off frame extraction only after the cell is in the DOM, so the
-    // isConnected guard in extractAndAnimate doesn't bail immediately.
-    if (isVideo) queueFrames(item, cell, img);
+    if (state.kind === 'videos') gridObserver.observe(cell);
   });
   scrollSelectedIntoView();
 }
 
-// ---------- Video stop-motion ----------
+// ---------- Video stop-motion (lazy, viewport-gated) ----------
 // Limit concurrent ffmpeg extractions.
 const MAX_CONCURRENT = 2;
 let running = 0;
 const queue = [];
 
-function queueFrames(item, cell, img) {
-  queue.push({ item, cell, img });
+// Called when video tiles enter or leave the (padded) viewport.
+function onIntersect(entries) {
+  for (const e of entries) {
+    const st = cellWork.get(e.target);
+    if (!st) continue;
+    if (e.isIntersecting) {
+      st.visible = true;
+      if (!st.started) queueExtract(st); // first approach: extract
+      else startAnimation(st); // back on screen: resume
+    } else {
+      st.visible = false;
+      stopCell(st); // off screen: pause the stop-motion timer
+    }
+  }
+}
+
+function queueExtract(st) {
+  st.started = true;
+  queue.push(st);
   pump();
 }
 
 function pump() {
   while (running < MAX_CONCURRENT && queue.length) {
-    const job = queue.shift();
+    const st = queue.shift();
+    if (!st.cell.isConnected) continue; // re-rendered away before we got to it
     running++;
-    extractAndAnimate(job).finally(() => {
+    extractFrames(st).finally(() => {
       running--;
       pump();
     });
@@ -255,40 +303,42 @@ function markNoPreview(cell) {
   if (lbl) lbl.textContent = 'NO PREVIEW';
 }
 
-async function extractAndAnimate({ item, cell, img }) {
-  // Cell may have been removed by a re-render; bail out if so.
-  if (!cell.isConnected) return;
+function startAnimation(st) {
+  if (!st.frames || st.frames.length < 2 || st.timer) return;
+  st.img.src = api.toFileURL(st.frames[st.frameIndex]);
+  // Each frame stays for 1s -> stop-motion / timelapse effect.
+  st.timer = setInterval(() => {
+    if (!st.cell.isConnected) {
+      stopCell(st);
+      return;
+    }
+    st.frameIndex = (st.frameIndex + 1) % st.frames.length;
+    st.img.src = api.toFileURL(st.frames[st.frameIndex]);
+  }, 1000);
+}
+
+async function extractFrames(st) {
+  if (!st.cell.isConnected) return;
   let frames;
   try {
-    frames = await api.videoFrames(item.path, item.mtimeMs);
+    frames = await api.videoFrames(st.item.path, st.item.mtimeMs);
   } catch (e) {
-    markNoPreview(cell);
+    markNoPreview(st.cell);
     return;
   }
-  if (!cell.isConnected) return;
+  if (!st.cell.isConnected) return;
   // Extraction completed but produced nothing (corrupt file, unsupported
   // codec, empty video): show "NO PREVIEW" instead of a perpetual spinner.
   if (!frames || !frames.length) {
-    markNoPreview(cell);
+    markNoPreview(st.cell);
     return;
   }
-  cell.classList.remove('loading');
-
-  let i = 0;
-  img.src = api.toFileURL(frames[0]);
-  if (frames.length === 1) return;
-
-  // Each frame stays for 1s -> stop-motion / timelapse effect.
-  const timer = setInterval(() => {
-    if (!cell.isConnected) {
-      clearInterval(timer);
-      frameTimers.delete(item.path);
-      return;
-    }
-    i = (i + 1) % frames.length;
-    img.src = api.toFileURL(frames[i]);
-  }, 1000);
-  frameTimers.set(item.path, timer);
+  st.cell.classList.remove('loading');
+  st.frames = frames;
+  st.frameIndex = 0;
+  st.img.src = api.toFileURL(frames[0]);
+  // Animate only if still on screen (and more than one frame).
+  if (st.visible) startAnimation(st);
 }
 
 // ---------- Selection ----------
@@ -535,11 +585,6 @@ async function doTrash() {
   } catch (e) {
     toast('Trash failed: ' + e.message);
     return;
-  }
-  const t = frameTimers.get(item.path);
-  if (t) {
-    clearInterval(t);
-    frameTimers.delete(item.path);
   }
   state.items.splice(state.selected, 1);
   toast(`Trashed ${item.name}`);
