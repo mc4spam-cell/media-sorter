@@ -141,17 +141,30 @@ async function pickFolder() {
   }
 }
 
+// Monotonic token so overlapping listings can't clobber each other: a slow
+// api.list() that resolves after a newer call is discarded.
+let listSeq = 0;
 async function loadList() {
   if (!state.folder) return;
+  const seq = ++listSeq;
   clearFrameTimers();
-  state.items = await api.list(state.folder, {
-    exts: activeExts(),
-    recursive: state.recursive,
-    sortBy: state.sortBy,
-    sortDir: state.sortDir,
-    showHidden: state.showHidden,
-    followSymlinks: state.followSymlinks,
-  });
+  let items;
+  try {
+    items = await api.list(state.folder, {
+      exts: activeExts(),
+      recursive: state.recursive,
+      sortBy: state.sortBy,
+      sortDir: state.sortDir,
+      showHidden: state.showHidden,
+      followSymlinks: state.followSymlinks,
+    });
+  } catch (e) {
+    if (seq !== listSeq) return; // superseded; stay silent
+    toast('List failed: ' + e.message);
+    return;
+  }
+  if (seq !== listSeq) return; // a newer loadList() started: drop this stale result
+  state.items = items;
   state.selected = 0;
   renderGrid();
   $('count').textContent = `${state.items.length} ${state.kind}`;

@@ -144,7 +144,7 @@ Le fichier est enveloppé dans une IIFE protégée contre une double évaluation
 
 ### 6.4 Points de vigilance
 
-- **Pas de jeton de requête sur `loadList`** (`renderer/renderer.js:123-135`) : si deux listages se chevauchent (changement de tri rapide, ou changement de dossier pendant un scan récursif long), la réponse arrivée en dernier écrase `state.items`, même si elle est obsolète. **[à confirmer]** : à reproduire.
+- **Jeton de requête sur `loadList`** (`renderer/renderer.js`, `listSeq`) : chaque appel incrémente un compteur et ne met à jour `state.items` / la grille que si son jeton est toujours le plus récent au retour du `await`. Un listage lent qui résout après un appel plus récent est ainsi **ignoré**, ce qui évite qu'une réponse obsolète écrase la liste courante (changement de tri rapide, ou de dossier pendant un scan récursif long). L'appel est aussi protégé par un `try/catch` (toast « List failed » si non supplanté). *(Résolu le 2026-10-17.)*
 - **Re-rendu complet après chaque action** : la suppression et le renommage appellent `renderGrid()` (`renderer/renderer.js:467`, `498`), ce qui relance toute la file des vignettes vidéo. Les frames sont en cache, mais chaque vignette repasse par l'IPC `video:frames`.
 - **Pas de virtualisation** : la grille crée un élément DOM par fichier listé (voir §6.2).
 

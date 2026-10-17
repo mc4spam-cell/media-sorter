@@ -52,7 +52,7 @@ Liste consolidée, regroupée par nature. Le numéro sert de référence pour la
 | # | Sujet | Où | Détail |
 |---|---|---|---|
 | 14 | Fermeture par fond bloquée | [features.md FN-09](features.md#fn-09-zoom-et-déplacement) | `dragMoved` n'est réinitialisé que si l'image est zoomée. Après un glisser suivi d'un retour à l'ajustement, un clic sur le fond peut ne pas fermer la visionneuse. |
-| 15 | Réponses de listage concurrentes | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Pas de jeton de requête sur `loadList` : une réponse obsolète peut écraser la liste courante. |
+| 15 | ~~Réponses de listage concurrentes~~ — **résolu (2026-10-17)** | [architecture.md §6.4](architecture.md#64-points-de-vigilance) | Jeton de requête (`listSeq`) sur `loadList` : une réponse obsolète est ignorée au lieu d'écraser la liste. `try/catch` ajouté. |
 | 16 | Chemins non restreints côté processus principal | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | `fs:list`, `file:trash`, `file:rename`, `file:open` acceptent tout chemin fourni par le renderer. Risque limité (renderer local), mais aucune restriction au dossier choisi. |
 | 17 | Sandbox du renderer non explicite | [architecture.md §9](architecture.md#9-sécurité-et-isolation) | Le preload semble sandboxé (défaut Electron 31), mais le réglage n'est pas déclaré. |
 | 18 | `read` et `set -e` dans le script Ubuntu | [build-and-deploy.md §3.2](build-and-deploy.md#32-installation-par-script-recommandée) | Une entrée fermée fait échouer le script au lieu de prendre la valeur par défaut. Le script est donc interactif uniquement. |
