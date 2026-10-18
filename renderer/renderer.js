@@ -104,6 +104,8 @@ const viewerCaption = $('viewerCaption');
 const viewerError = $('viewerError');
 const renameModal = $('renameModal');
 const renameInput = $('renameInput');
+const prefixModal = $('prefixModal');
+const prefixInput = $('prefixInput');
 const prefsModal = $('prefsModal');
 const confirmModal = $('confirmModal');
 const toastEl = $('toast');
@@ -129,6 +131,7 @@ function stopAllTimers() {
 function isModalOpen() {
   return (
     !renameModal.classList.contains('hidden') ||
+    !prefixModal.classList.contains('hidden') ||
     !prefsModal.classList.contains('hidden') ||
     !confirmModal.classList.contains('hidden')
   );
@@ -753,7 +756,7 @@ function openRename() {
   const items = actionTargets();
   if (!items.length) return;
   if (items.length > 1) {
-    toast('Select a single file to rename');
+    openPrefix(items);
     return;
   }
   const item = (renameTarget = items[0]);
@@ -791,6 +794,87 @@ async function confirmRename() {
     toast('Rename failed: ' + e.message);
   }
 }
+
+// ---------- Batch rename (prefix) ----------
+// R with several files selected: prepend a prefix to every name, as one undo
+// entry. The preview is indicative; main resolves collisions with " (n)".
+const PREVIEW_MAX = 10;
+let prefixTargets = [];
+
+function openPrefix(items) {
+  prefixTargets = items;
+  $('prefixTitle').textContent = `Add a prefix to ${items.length} files`;
+  prefixInput.value = '';
+  updatePrefixPreview();
+  prefixModal.classList.remove('hidden');
+  prefixInput.focus();
+}
+
+function closePrefix() {
+  prefixModal.classList.add('hidden');
+}
+
+function updatePrefixPreview() {
+  const prefix = prefixInput.value.replace(/[/\\]/g, '_'); // as main sanitizes it
+  const list = $('prefixPreview');
+  list.innerHTML = '';
+  for (const it of prefixTargets.slice(0, PREVIEW_MAX)) {
+    const li = document.createElement('li');
+    const after = document.createElement('span');
+    after.className = 'after';
+    after.textContent = prefix + it.name;
+    li.append(`${it.name} → `, after);
+    list.appendChild(li);
+  }
+  if (prefixTargets.length > PREVIEW_MAX) {
+    const li = document.createElement('li');
+    li.textContent = `… and ${prefixTargets.length - PREVIEW_MAX} more`;
+    list.appendChild(li);
+  }
+  $('prefixOk').disabled = !prefixInput.value.trim();
+}
+
+async function confirmPrefix() {
+  const prefix = prefixInput.value;
+  const items = prefixTargets;
+  if (!prefix.trim() || !items.length) return;
+  closePrefix();
+  prefixTargets = [];
+  let res;
+  try {
+    res = await api.renameBatch(items.map((it) => it.path), prefix);
+  } catch (e) {
+    toast('Rename failed: ' + e.message);
+    return;
+  }
+  // Update the listed items in place; the selection follows the new paths.
+  const byPath = new Map(items.map((it) => [it.path, it]));
+  let suffixed = 0;
+  for (const { from, to } of res.renamed) {
+    const item = byPath.get(from);
+    const name = to.split(/[/\\]/).pop();
+    if (name !== prefix.replace(/[/\\]/g, '_') + item.name) suffixed++;
+    if (state.sel.delete(from)) state.sel.add(to);
+    item.path = to;
+    item.name = name;
+    if (item.rel) item.rel = item.rel.replace(/[^/\\]*$/, name);
+  }
+  renderGrid();
+  const n = res.renamed.length;
+  let msg = n ? `Prefixed ${n} file${n > 1 ? 's' : ''} · Z to undo` : 'Nothing renamed';
+  if (suffixed) msg += ` · ${suffixed} got a " (n)" suffix`;
+  if (res.errors.length) msg += ` · ${res.errors.length} failed (${res.errors[0].message})`;
+  toast(msg);
+}
+
+prefixInput.addEventListener('input', updatePrefixPreview);
+prefixInput.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') confirmPrefix();
+  else if (e.key === 'Escape') closePrefix();
+});
+$('prefixCancel').addEventListener('click', closePrefix);
+$('prefixOk').addEventListener('click', confirmPrefix);
 
 // ---------- Tabs ----------
 function setKind(kind) {

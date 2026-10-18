@@ -64,6 +64,19 @@
       </div>
     </div>
 
+    <!-- Batch rename: add a prefix to every selected file -->
+    <div id="prefixModal" class="modal hidden">
+      <div class="modal-box">
+        <div id="prefixTitle" class="modal-title">Add a prefix</div>
+        <input id="prefixInput" type="text" spellcheck="false" placeholder="e.g. 2024_" />
+        <ul id="prefixPreview" class="prefix-preview"></ul>
+        <div class="modal-actions">
+          <button id="prefixCancel">Cancel</button>
+          <button id="prefixOk" class="primary">Rename</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Preferences -->
     <div id="prefsModal" class="modal hidden">
       <div class="modal-box">
@@ -132,7 +145,7 @@
           <dt><b>Esc</b></dt><dd>Back / keep only the current file selected</dd>
           <dt><b>X</b></dt><dd>Send selection to trash</dd>
           <dt><b>Z</b>&nbsp;/&nbsp;<b>⌘Z</b>&nbsp;/&nbsp;<b>Ctrl+Z</b></dt><dd>Undo (last 10 actions)</dd>
-          <dt><b>R</b></dt><dd>Rename</dd>
+          <dt><b>R</b></dt><dd>Rename (several selected: add a prefix)</dd>
           <dt><b>G</b></dt><dd>Open in GIMP (photos)</dd>
           <dt><b>S</b></dt><dd>Open in Shotcut (videos)</dd>
           <dt><b>0</b></dt><dd>Reset zoom (fullscreen)</dd>

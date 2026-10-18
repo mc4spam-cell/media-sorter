@@ -346,6 +346,36 @@ ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
   return target;
 });
 
+// ---------- IPC: batch rename (prefix) ----------
+// Renames each file to <prefix><name> in its own folder, one at a time so a
+// collision created by an earlier file of the batch is seen by the next (" (n)"
+// suffix). The whole batch is ONE undo entry. Returns { renamed: [{from, to}],
+// errors }.
+ipcMain.handle('file:renameBatch', async (_e, paths, prefix) => {
+  if (typeof prefix !== 'string' || !prefix.trim()) throw new Error('Empty prefix');
+  // A prefix is part of a name: no path separators.
+  const safe = prefix.replace(/[/\\]/g, '_');
+  const renamed = [];
+  const errors = [];
+  for (const p of [].concat(paths)) {
+    try {
+      await assertRegularFile(p);
+      const to = uniqueTarget(path.dirname(p), safe + path.basename(p));
+      await fsp.rename(p, to);
+      renamed.push({ from: p, to });
+    } catch (e) {
+      errors.push({ path: p, message: e.message });
+    }
+  }
+  if (renamed.length) {
+    await undoStack.record(
+      `Prefix "${safe}" on ${renamed.length} file${renamed.length > 1 ? 's' : ''}`,
+      renamed.map(({ from, to }) => ({ type: 'rename', from, to }))
+    );
+  }
+  return { renamed, errors };
+});
+
 // ---------- External launch helpers ----------
 // When the app runs as an AppImage, its runtime injects LD_LIBRARY_PATH and
 // various plugin paths pointing at Electron's bundled libraries. A child GUI

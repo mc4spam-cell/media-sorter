@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   undo: () => ipcRenderer.invoke('undo:pop'),
   peekUndo: () => ipcRenderer.invoke('undo:peek'),
   rename: (oldPath, newName) => ipcRenderer.invoke('file:rename', oldPath, newName),
+  renameBatch: (paths, prefix) => ipcRenderer.invoke('file:renameBatch', paths, prefix),
   openExternal: (filePath) => ipcRenderer.invoke('file:open', filePath),
   openWith: (filePath, app) => ipcRenderer.invoke('file:openWith', filePath, app),
   videoFrames: (filePath, mtimeMs) => ipcRenderer.invoke('video:frames', filePath, mtimeMs),
