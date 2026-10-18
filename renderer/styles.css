@@ -358,6 +358,25 @@ body {
   color: var(--text);
 }
 
+/* Move / copy progress */
+.progress {
+  height: 8px;
+  margin-top: 12px;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+.transfer-stats {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---------- Preferences ---------- */
 .pref-row {
   display: flex;

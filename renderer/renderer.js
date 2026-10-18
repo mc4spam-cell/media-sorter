@@ -106,11 +106,18 @@ const renameModal = $('renameModal');
 const renameInput = $('renameInput');
 const prefixModal = $('prefixModal');
 const prefixInput = $('prefixInput');
+const transferModal = $('transferModal');
 const prefsModal = $('prefsModal');
 const confirmModal = $('confirmModal');
 const toastEl = $('toast');
 
 // ---------- Helpers ----------
+// Error text for toasts, without Electron's "Error invoking remote method
+// 'x': Error: " wrapper around errors thrown in main.
+function errMsg(e) {
+  return String((e && e.message) || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
 function toast(msg) {
   toastEl.textContent = msg;
   toastEl.classList.remove('hidden');
@@ -132,6 +139,7 @@ function isModalOpen() {
   return (
     !renameModal.classList.contains('hidden') ||
     !prefixModal.classList.contains('hidden') ||
+    !transferModal.classList.contains('hidden') ||
     !prefsModal.classList.contains('hidden') ||
     !confirmModal.classList.contains('hidden')
   );
@@ -150,7 +158,7 @@ async function pickFolder() {
     await loadList({ reset: true });
   } catch (e) {
     console.error('pickFolder failed:', e);
-    toast('Open folder failed: ' + e.message);
+    toast('Open folder failed: ' + errMsg(e));
   }
 }
 
@@ -177,7 +185,7 @@ async function loadList({ reset = false } = {}) {
     });
   } catch (e) {
     if (seq !== listSeq) return; // superseded; stay silent
-    toast('List failed: ' + e.message);
+    toast('List failed: ' + errMsg(e));
     return;
   }
   if (seq !== listSeq) return; // a newer loadList() started: drop this stale result
@@ -485,7 +493,7 @@ async function playCurrent() {
   try {
     await api.openExternal(item.path);
   } catch (e) {
-    toast('Cannot open video: ' + e.message);
+    toast('Cannot open video: ' + errMsg(e));
   }
 }
 
@@ -498,7 +506,7 @@ async function openWithApp(app) {
     await api.openWith(item.path, app);
     toast(`Opening in ${label}…`);
   } catch (e) {
-    toast(`Cannot open in ${label}: ${e.message}`);
+    toast(`Cannot open in ${label}: ${errMsg(e)}`);
   }
 }
 
@@ -686,7 +694,7 @@ async function doTrash(items) {
   try {
     res = await api.trash(items.map((it) => it.path));
   } catch (e) {
-    toast('Trash failed: ' + e.message);
+    toast('Trash failed: ' + errMsg(e));
     return;
   }
   if (!res.trashed.length) {
@@ -742,7 +750,7 @@ async function undoLast() {
         : `Undone: ${res.label}`
     );
   } catch (e) {
-    toast('Undo failed: ' + e.message);
+    toast('Undo failed: ' + errMsg(e));
   } finally {
     undoBusy = false;
   }
@@ -791,7 +799,7 @@ async function confirmRename() {
     renderGrid();
     if (state.fullscreen) updateViewer();
   } catch (e) {
-    toast('Rename failed: ' + e.message);
+    toast('Rename failed: ' + errMsg(e));
   }
 }
 
@@ -844,7 +852,7 @@ async function confirmPrefix() {
   try {
     res = await api.renameBatch(items.map((it) => it.path), prefix);
   } catch (e) {
-    toast('Rename failed: ' + e.message);
+    toast('Rename failed: ' + errMsg(e));
     return;
   }
   // Update the listed items in place; the selection follows the new paths.
@@ -875,6 +883,77 @@ prefixInput.addEventListener('keydown', (e) => {
 });
 $('prefixCancel').addEventListener('click', closePrefix);
 $('prefixOk').addEventListener('click', confirmPrefix);
+
+// ---------- Move / copy (M / C) ----------
+// Pick a destination folder, then let main move/copy the targets. Main pushes
+// progress while bytes are copied (copy, cross-volume move, or an undo bringing
+// files back); the overlay shows only then.
+function formatBytes(n) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i++;
+  }
+  return `${n.toFixed(i ? 1 : 0)} ${units[i]}`;
+}
+
+let transferBusy = false;
+async function transferTo(mode) {
+  const items = actionTargets();
+  if (!items.length || transferBusy) return;
+  let dest;
+  try {
+    dest = await api.openFolder();
+  } catch (e) {
+    toast('Cannot pick a folder: ' + errMsg(e));
+    return;
+  }
+  if (!dest) return;
+  transferBusy = true;
+  let res;
+  try {
+    res = await api.transfer(items.map((it) => it.path), dest, mode);
+  } catch (e) {
+    toast(`${mode === 'move' ? 'Move' : 'Copy'} failed: ${errMsg(e)}`);
+    return;
+  } finally {
+    transferBusy = false;
+  }
+
+  const n = res.done.length;
+  const folderName = pathBase(dest);
+  let msg = n
+    ? `${mode === 'move' ? 'Moved' : 'Copied'} ${n === 1 ? pathBase(res.done[0].from) : n + ' files'} to ${folderName} · Z to undo`
+    : `Nothing ${mode === 'move' ? 'moved' : 'copied'}`;
+  if (res.cancelled) msg += ' · cancelled';
+  if (res.skipped) msg += ` · ${res.skipped} already there`;
+  if (res.errors.length) msg += ` · ${res.errors.length} failed (${res.errors[0].message})`;
+
+  // Moved files leave the listing (or reappear under a subfolder in recursive
+  // mode); a copy only shows up if it landed inside the current folder.
+  const inside = dest === state.folder || dest.startsWith(state.folder.replace(/\/+$/, '') + '/');
+  if (n && (mode === 'move' || inside)) {
+    await loadList();
+    if (!state.items.length) closeViewer();
+    else if (state.fullscreen) updateViewer();
+  }
+  toast(msg);
+}
+
+api.onTransferProgress((p) => {
+  transferModal.classList.remove('hidden');
+  $('transferName').textContent = p.name;
+  const pct = p.bytesTotal ? Math.min(100, (100 * p.bytesDone) / p.bytesTotal) : 0;
+  $('transferBar').style.width = pct.toFixed(1) + '%';
+  $('transferStats').textContent =
+    `${p.fileIndex}/${p.fileCount} · ${formatBytes(p.bytesDone)} / ${formatBytes(p.bytesTotal)}`;
+});
+api.onTransferEnd(() => {
+  transferModal.classList.add('hidden');
+  $('transferBar').style.width = '0';
+});
+$('transferCancel').addEventListener('click', () => api.cancelTransfer());
 
 // ---------- Tabs ----------
 function setKind(kind) {
@@ -1141,6 +1220,10 @@ renameInput.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (!transferModal.classList.contains('hidden')) {
+    if (e.key === 'Escape') api.cancelTransfer();
+    return; // copy in progress: swallow other keys
+  }
   if (!helpModal.classList.contains('hidden')) {
     if (e.key === 'Escape') closeHelp();
     return; // shortcuts window open: swallow other keys
@@ -1212,6 +1295,14 @@ document.addEventListener('keydown', (e) => {
     case 's':
     case 'S':
       if (state.kind === 'videos') openWithApp('shotcut');
+      break;
+    case 'm':
+    case 'M':
+      transferTo('move');
+      break;
+    case 'c':
+    case 'C':
+      transferTo('copy');
       break;
   }
 });

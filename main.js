@@ -6,7 +6,13 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
-const { uniqueTarget } = require('./lib/fileops');
+const {
+  uniqueTarget,
+  sameVolume,
+  hasRoomFor,
+  copyWithProgress,
+  moveFile,
+} = require('./lib/fileops');
 const { createUndoStack, STAGING_DIR } = require('./lib/undo');
 // ffmpeg-static resolves to a bundled binary. If the app is ever packed into an
 // asar, the executable lives in the unpacked sibling dir — handle both.
@@ -148,6 +154,7 @@ if (!gotLock) {
     undoStack = createUndoStack({
       journalPath: path.join(app.getPath('userData'), 'undo-journal.json'),
       trash: async (p) => (await getTrash())(p),
+      beginTransfer,
     });
     // Recover from a crash: whatever the last run left staged goes to the OS
     // trash. Queued ahead of any trash/undo the user triggers.
@@ -344,6 +351,144 @@ ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
     { type: 'rename', from: oldPath, to: target },
   ]);
   return target;
+});
+
+// ---------- Transfers (move / copy) with progress ----------
+// One byte-copying transfer at a time (a move/copy, or an undo bringing files
+// back across volumes). Progress is pushed to the renderer, which shows an
+// overlay with a Cancel button.
+let activeTransfer = null;
+const PROGRESS_INTERVAL_MS = 100;
+
+function sendToRenderer(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+}
+
+function beginTransfer({ totalBytes, fileCount }) {
+  if (activeTransfer) throw new Error('Another transfer is running');
+  const ctrl = new AbortController();
+  let base = 0; // bytes of the files already finished
+  let fileIndex = 0;
+  let lastSent = 0;
+  const t = {
+    signal: ctrl.signal,
+    abort: () => ctrl.abort(),
+    // Options for one copy/move: reports overall progress, honors Cancel.
+    forFile(name) {
+      fileIndex++;
+      let fileBytes = 0;
+      const report = (force) => {
+        const now = Date.now();
+        if (!force && now - lastSent < PROGRESS_INTERVAL_MS) return;
+        lastSent = now;
+        sendToRenderer('transfer:progress', {
+          name, fileIndex, fileCount, bytesDone: base + fileBytes, bytesTotal: totalBytes,
+        });
+      };
+      report(true);
+      return {
+        signal: ctrl.signal,
+        onProgress: (done, size) => {
+          fileBytes = done;
+          if (done >= size) {
+            base += size;
+            fileBytes = 0;
+          }
+          report(false);
+        },
+      };
+    },
+    end() {
+      if (activeTransfer === t) activeTransfer = null;
+      sendToRenderer('transfer:end');
+    },
+  };
+  activeTransfer = t;
+  return t;
+}
+
+ipcMain.handle('file:transferCancel', () => {
+  if (activeTransfer) activeTransfer.abort();
+});
+
+// Move or copy files into destDir. Same-volume moves are instant renames;
+// copies and cross-volume moves stream with progress, after checking the
+// destination has room. Name collisions get " (n)". The batch is ONE undo
+// entry (also when cancelled midway: what was done stays undoable).
+// Returns { done: [{from, to}], skipped, errors, cancelled }.
+ipcMain.handle('file:transfer', async (_e, paths, destDir, mode) => {
+  if (mode !== 'move' && mode !== 'copy') throw new Error('Unknown mode: ' + mode);
+  let st;
+  try {
+    st = await fsp.stat(destDir);
+  } catch {
+    throw new Error(`Destination not found: ${destDir}`);
+  }
+  if (!st.isDirectory()) throw new Error(`Not a folder: ${destDir}`);
+
+  const errors = [];
+  let skipped = 0;
+  const jobs = []; // { src, size, copies }
+  for (const src of [].concat(paths)) {
+    try {
+      const s = await assertRegularFile(src);
+      // Moving a file into its own folder is a no-op.
+      if (mode === 'move' && path.dirname(src) === destDir) {
+        skipped++;
+        continue;
+      }
+      const copies = mode === 'copy' || !(await sameVolume(src, destDir));
+      jobs.push({ src, size: s.size, copies });
+    } catch (e) {
+      errors.push({ path: src, message: e.message });
+    }
+  }
+
+  const totalBytes = jobs.reduce((n, j) => n + (j.copies ? j.size : 0), 0);
+  if (totalBytes) {
+    const room = await hasRoomFor(destDir, totalBytes);
+    if (!room.ok) throw new Error(room.message);
+  }
+
+  const fileCount = jobs.filter((j) => j.copies).length;
+  const transfer = totalBytes ? beginTransfer({ totalBytes, fileCount }) : null;
+  const ops = [];
+  let cancelled = false;
+  try {
+    for (const job of jobs) {
+      if (transfer && transfer.signal.aborted) {
+        cancelled = true;
+        break;
+      }
+      const to = uniqueTarget(destDir, path.basename(job.src));
+      const opts = job.copies && transfer ? transfer.forFile(path.basename(job.src)) : {};
+      try {
+        if (mode === 'copy') {
+          await copyWithProgress(job.src, to, opts);
+          ops.push({ type: 'copy', from: job.src, to });
+        } else {
+          const { crossVolume } = await moveFile(job.src, to, opts);
+          ops.push({ type: 'move', from: job.src, to, crossVolume });
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          cancelled = true;
+          break;
+        }
+        errors.push({ path: job.src, message: e.message });
+      }
+    }
+  } finally {
+    if (transfer) transfer.end();
+  }
+
+  if (ops.length) {
+    const n = ops.length;
+    const verb = mode === 'move' ? 'Move' : 'Copy';
+    const what = n === 1 ? path.basename(ops[0].from) : `${n} files`;
+    await undoStack.record(`${verb} ${what} to ${path.basename(destDir)}`, ops);
+  }
+  return { done: ops.map(({ from, to }) => ({ from, to })), skipped, errors, cancelled };
 });
 
 // ---------- IPC: batch rename (prefix) ----------

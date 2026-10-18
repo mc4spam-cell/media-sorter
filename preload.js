@@ -20,6 +20,11 @@ contextBridge.exposeInMainWorld('api', {
   peekUndo: () => ipcRenderer.invoke('undo:peek'),
   rename: (oldPath, newName) => ipcRenderer.invoke('file:rename', oldPath, newName),
   renameBatch: (paths, prefix) => ipcRenderer.invoke('file:renameBatch', paths, prefix),
+  // Move / copy into a folder (mode 'move' | 'copy'), with pushed progress.
+  transfer: (paths, destDir, mode) => ipcRenderer.invoke('file:transfer', paths, destDir, mode),
+  cancelTransfer: () => ipcRenderer.invoke('file:transferCancel'),
+  onTransferProgress: (cb) => ipcRenderer.on('transfer:progress', (_e, p) => cb(p)),
+  onTransferEnd: (cb) => ipcRenderer.on('transfer:end', () => cb()),
   openExternal: (filePath) => ipcRenderer.invoke('file:open', filePath),
   openWith: (filePath, app) => ipcRenderer.invoke('file:openWith', filePath, app),
   videoFrames: (filePath, mtimeMs) => ipcRenderer.invoke('video:frames', filePath, mtimeMs),

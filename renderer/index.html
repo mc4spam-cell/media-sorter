@@ -129,6 +129,19 @@
       </div>
     </div>
 
+    <!-- Move / copy progress (only shown while bytes are being copied) -->
+    <div id="transferModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-title">Copying…</div>
+        <div id="transferName" class="confirm-text"></div>
+        <div class="progress"><div id="transferBar" class="progress-bar"></div></div>
+        <div id="transferStats" class="transfer-stats"></div>
+        <div class="modal-actions">
+          <button id="transferCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" class="toast hidden"></div>
 
     <!-- Keyboard shortcuts -->
@@ -146,6 +159,8 @@
           <dt><b>X</b></dt><dd>Send selection to trash</dd>
           <dt><b>Z</b>&nbsp;/&nbsp;<b>⌘Z</b>&nbsp;/&nbsp;<b>Ctrl+Z</b></dt><dd>Undo (last 10 actions)</dd>
           <dt><b>R</b></dt><dd>Rename (several selected: add a prefix)</dd>
+          <dt><b>M</b></dt><dd>Move selection to a folder…</dd>
+          <dt><b>C</b></dt><dd>Copy selection to a folder…</dd>
           <dt><b>G</b></dt><dd>Open in GIMP (photos)</dd>
           <dt><b>S</b></dt><dd>Open in Shotcut (videos)</dd>
           <dt><b>0</b></dt><dd>Reset zoom (fullscreen)</dd>
