@@ -7,25 +7,31 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 
 ### Photos (`.jpg` `.jpeg` `.png` `.webp`)
 - **Thumbnail grid** view and a **fullscreen** view (black background, image fit-to-screen, never stretched).
-- Click a thumbnail (or press **Enter**) to open it fullscreen; **Esc** returns to the grid.
+- Double-click a thumbnail (or press **Enter**) to open it fullscreen; **Esc** returns to the grid.
 
 ### Videos (`.avi` `.mpg` `.mpeg` `.mkv`)
 - **Thumbnail grid** only.
 - Each thumbnail is an animated **stop-motion / timelapse**: up to **20 frames spread across the whole video** (one every **60 s** for clips up to ~20 min, then a wider step so long videos are still covered end to end), each shown for **1 s**, looping.
 - Frames are extracted with a bundled `ffmpeg` (no system install needed) and cached, so a folder is fast to reopen.
-- Click a thumbnail (or press **Enter**) to **play the video in your system's default player** — Chromium can't decode avi/mpg/mkv, so playback is handed off to the OS (`xdg-open` on Linux, the default app on macOS).
+- Double-click a thumbnail (or press **Enter**) to **play the video in your system's default player** — Chromium can't decode avi/mpg/mkv, so playback is handed off to the OS (`xdg-open` on Linux, the default app on macOS).
 
 ### Keyboard (both modes)
 | Key | Action |
 |-----|--------|
 | ← → (also ↑ ↓) | previous / next |
 | **Enter** | open fullscreen (photos) / play in system player (videos) |
-| **Esc** | leave fullscreen |
-| **X** | send the current file to the OS trash |
-| **R** | rename the current file (a dialog is proposed) |
+| **Shift** + ← → | extend the selection |
+| **Cmd/Ctrl + A** | select all |
+| **Esc** | leave fullscreen / keep only the current file selected |
+| **X** | send the selection to the trash |
+| **Z** (or **Cmd/Ctrl + Z**) | undo the last action (up to 10) |
+| **R** | rename the current file; with several selected, add a prefix to all of them |
+| **M** / **C** | move / copy the selection to a folder |
 | **G** | open the current **photo** in GIMP |
 | **S** | open the current **video** in Shotcut |
 | **0** | reset zoom to fit (fullscreen photo) |
+
+In the fullscreen viewer, X/R/M/C act on the displayed photo only.
 
 `G`/`S` launch the editor via `open -a` on macOS and the `gimp`/`shotcut` binary on Linux. If the editor isn't installed, a toast says so.
 
@@ -40,7 +46,10 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 - **Maximize** toolbar toggle: when on, every fullscreen photo is scaled up to the largest size that fits the window (aspect ratio preserved), instead of capping at the photo's native size. Pinch-zoom still works on top of it. Remembered between launches.
 - **Thumbnail grids**: pinch (Ctrl + scroll) to grow/shrink the tiles. Plain two-finger scroll still scrolls the grid. The chosen size is remembered.
 
-Trash uses the **system trash/recycle bin** (Finder Trash on macOS, Trash on Ubuntu), so deletions are recoverable.
+### Selection, undo, move & copy
+- **Click** selects a thumbnail, **double-click** opens it. **Cmd/Ctrl-click** adds or removes a file, **Shift-click** selects a range.
+- **Undo** (Z / Cmd+Z / Ctrl+Z) reverts the last 10 actions — trash, rename, prefix, move, copy — each burst at once. A trashed file is first parked in a hidden `.media-sorter-staging` folder next to it (instant even for huge videos) and reaches the **system trash** (Finder Trash on macOS, Trash on Ubuntu) when it leaves the undo history or when the app quits; a folder that can't host it (read-only) sends it straight to the trash, not undoable.
+- **Move / copy** (M / C): pick a folder; moves on the same disk are instant, copies and moves to another disk show a progress bar with Cancel, after checking there's enough free space. Name clashes get a ` (n)` suffix.
 
 ## Run (development)
 

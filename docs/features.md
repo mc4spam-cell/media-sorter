@@ -58,7 +58,7 @@ Définies dans `TYPE_SETS` (`renderer/renderer.js`) :
   - nom : `localeCompare` avec `numeric: true`, donc `img2` précède `img10` ;
   - date : tri numérique sur `mtimeMs`, du plus ancien au plus récent en ascendant.
 - **En mode sous-dossiers**, le tri par nom s'applique au **chemin relatif** (`rel`) et non au nom de fichier seul : les fichiers sont donc **regroupés par dossier** (ordre arborescent). En mode non récursif, le tri reste sur le nom de fichier. *(Depuis le 2026-10-17 ; auparavant, des homonymes de dossiers différents étaient mélangés.)*
-- Le changement de critère ou de sens recharge la liste et **remet la sélection au premier élément** (`renderer/renderer.js`).
+- Le changement de critère ou de sens recharge la liste en **conservant la sélection** (fichiers toujours listés) et le curseur sur le même fichier (`loadList`, `renderer/renderer.js`). *(Depuis la 1.2.0 ; auparavant, la sélection revenait au premier élément.)* Seuls un nouveau dossier ou un changement de mode repartent du premier élément.
 - Préférences sauvegardées : `sortBy`, `sortDir` (voir [config.md §3](config.md#3-préférences-persistées)).
 
 ### FN-05 Sous-dossiers
@@ -96,7 +96,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js`, `main.js`).
 ## 6. Visionneuse plein écran (photos)
 
 ### FN-08 Affichage
-- Ouverte par **clic** sur une vignette photo, ou par **Entrée** (`renderer/renderer.js`).
+- Ouverte par **double-clic** sur une vignette photo, ou par **Entrée** (`openCurrent`, `renderer/renderer.js`). *(Depuis la 1.2.0 ; le clic simple ouvrait directement, il sélectionne désormais, voir FN-21.)*
 - Fond noir, image centrée, légende « nom · position/total » en bas (`renderer/renderer.js`).
 - Un fichier que Chromium ne sait pas décoder (corrompu ou codec inattendu — les formats non décodables ne sont plus proposés, voir FN-03) ouvert en plein écran affiche une **notice centrée « Cannot preview · <EXT> »** (l'image cassée est masquée), en cohérence avec le badge d'extension de la grille. La notice disparaît dès qu'on navigue vers une image affichable (`renderer/renderer.js`, `showViewerError` / `hideViewerError`). *(Depuis le 2026-10-17 ; auparavant, seule une image cassée s'affichait, sans indication.)*
 - Quitter : **Échap** ou clic sur le fond noir (pas sur l'image) (`renderer/renderer.js`).
@@ -122,26 +122,28 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js`, `main.js`).
 ## 7. Lecture des vidéos
 
 ### FN-11 Lecture externe
-- **Clic** sur une vignette vidéo, ou **Entrée**, ouvre le fichier dans le **lecteur par défaut du système** (`renderer/renderer.js`).
+- **Double-clic** sur une vignette vidéo, ou **Entrée**, ouvre le fichier dans le **lecteur par défaut du système** (`openCurrent` / `playCurrent`, `renderer/renderer.js`). *(Depuis la 1.2.0 ; auparavant, clic simple.)*
   - Linux : `xdg-open` avec un environnement assaini (`main.js`).
   - macOS : `shell.openPath` (`main.js`).
 - En cas d'échec : message « Cannot open video: … ».
 - Aucune lecture n'est intégrée à l'application.
 
-## 8. Actions sur le fichier courant
+## 8. Actions sur les fichiers
+
+Les actions X, R, M et C portent sur la **sélection** en grille (FN-21) et sur la **seule photo affichée** dans la visionneuse (`actionTargets`, `renderer/renderer.js`). G, S, Entrée et le double-clic portent sur le fichier courant (curseur).
 
 ### FN-12 Mise à la corbeille (touche X)
-- Par défaut, une **boîte de confirmation** « Send to trash? » s'ouvre (Entrée confirme via le bouton focalisé, Échap annule). Ce garde-fou est **désactivable** dans ⚙ Préférences (« Confirm before deleting », défaut activé) ; désactivé, la touche X met à la corbeille immédiatement (`renderer/renderer.js`, `trashCurrent` / `openConfirmDelete` / `doTrash`, `confirmDelete`). *(Toggle ajouté le 2026-10-17.)*
-- Le fichier part dans la **corbeille du système** via le paquet `trash` (`main.js`) :
-  - macOS : binaire `macos-trash`, donc la corbeille du Finder ;
-  - Linux : spécification freedesktop (répertoire XDG `Trash`).
-- Après succès : l'élément disparaît de la liste, le compteur est mis à jour, un message « Trashed <nom> » s'affiche, et la sélection reste à la même position (ou passe à la précédente si c'était la dernière).
+- Par défaut, une **boîte de confirmation** « Send to trash? » s'ouvre : « “<nom>” will be moved to the trash (Z to undo). », ou « N files will be moved… » pour une sélection (Entrée confirme via le bouton focalisé, Échap annule). Ce garde-fou est **désactivable** dans ⚙ Préférences (« Confirm before deleting », défaut activé) ; désactivé, la touche X met à la corbeille immédiatement (`renderer/renderer.js`, `trashCurrent` / `openConfirmDelete` / `doTrash`, `confirmDelete`). Les fichiers visés sont figés à l'ouverture de la confirmation.
+- **Annulable** (depuis la 1.2.0, FN-20) : le fichier n'est pas envoyé tout de suite à la corbeille système, il est déplacé par `rename` dans un dossier caché **du même dossier**, `.media-sorter-staging/` (instantané quelle que soit la taille). Toute la sélection forme **une seule** entrée d'annulation (`lib/undo.js`, `trashFiles`).
+- Il rejoint la **corbeille du système** (paquet `trash` : corbeille du Finder sur macOS, corbeille freedesktop sur Linux), **sous son nom et à son emplacement d'origine** (« Remettre » fonctionne normalement), quand son entrée sort de la pile : 11ᵉ action, ou purge au lancement / en quittant (FN-20).
+- **Repli** : si le dossier n'accepte pas le staging (lecture seule : `EACCES`, `EPERM`, `EROFS`), le fichier part directement à la corbeille système, **sans annulation possible** ; le message le signale (« (cannot be undone) »).
+- Après succès : les éléments disparaissent de la liste, le compteur est mis à jour, un message « Trashed <nom> · Z to undo » (ou « Trashed N files · Z to undo ») s'affiche, et le curseur se place à la position du premier fichier supprimé (ou sur le dernier élément).
 - S'il ne reste plus rien : la visionneuse se ferme.
 - En cas d'échec : message « Trash failed: … », aucun changement dans la liste.
 - Les frames en cache du fichier ne sont **pas** supprimées (voir [config.md §4](config.md#4-cache-des-images-vidéo)).
-- Pas d'annulation intégrée après coup ; la récupération se fait depuis la corbeille système (et la confirmation préalable, activée par défaut, sert de garde-fou).
 
 ### FN-13 Renommage (touche R)
+- Avec **plusieurs** fichiers sélectionnés, R ouvre le renommage en masse (FN-22).
 - Une fenêtre modale « Rename file » s'ouvre, pré-remplie avec le nom complet. La partie avant le **dernier point** est présélectionnée, pour ne modifier que le nom de base (`renderer/renderer.js`).
 - **Entrée** valide, **Échap** annule, ou boutons « Cancel » / « Rename ». Un clic à l'extérieur ne ferme pas la fenêtre.
 - Règles appliquées par le processus principal (`main.js`) :
@@ -150,7 +152,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js`, `main.js`).
   - **l'extension d'origine est toujours conservée** : elle est ajoutée sauf si le nom saisi se termine déjà par elle (comparaison insensible à la casse, puis casse normalisée sur l'extension d'origine). Le texte saisi est donc traité comme le **nom de base**, si bien qu'un point décoratif (`budget.2024` → `budget.2024.jpg`) n'écrase plus l'extension réelle. On ne peut donc plus changer l'extension via le renommage ; un fichier sans extension garde le nom tel quel. *(Depuis le 2026-10-17.)*
   - si le nom cible existe déjà, un suffixe ` (1)`, ` (2)`… est ajouté avant l'extension ;
   - un nom identique à l'original ne fait rien.
-- Après succès : message « Renamed to <nouveau nom> », rechargement de la grille (les frames vidéo sont recalculées car la clé de cache dépend du chemin).
+- Après succès : message « Renamed to <nouveau nom> · Z to undo », rechargement de la grille (les frames vidéo sont recalculées car la clé de cache dépend du chemin). Le renommage est **annulable** (FN-20).
 - En cas d'échec : message « Rename failed: … ».
 
 ### FN-14 Éditeurs externes
@@ -193,35 +195,43 @@ Comportement côté interface (`renderer/renderer.js`) :
 
 | Touche | Mode | Action | Réf. |
 |---|---|---|---|
-| **←** / **↑** | tous | Élément précédent | `renderer/renderer.js` |
-| **→** / **↓** | tous | Élément suivant | `renderer/renderer.js` |
+| **←** / **↑** | tous | Élément précédent (la sélection se réduit à lui) | `renderer/renderer.js` |
+| **→** / **↓** | tous | Élément suivant (idem) | `renderer/renderer.js` |
+| **Shift + flèches** | grille | Étendre la sélection en plage (FN-21) | `renderer/renderer.js` |
+| **Cmd+A** / **Ctrl+A** | grille | Tout sélectionner (FN-21) | `renderer/renderer.js` |
 | **Entrée** | Photos | Ouvrir la visionneuse (sans effet si déjà ouverte) | `renderer/renderer.js` |
 | **Entrée** | Videos | Lancer dans le lecteur système | `renderer/renderer.js` |
-| **Échap** | tous | Fermer la visionneuse (sans effet ailleurs) | `renderer/renderer.js` |
+| **Échap** | tous | Fermer la visionneuse ; en grille, réduire une sélection multiple au fichier courant | `renderer/renderer.js` |
 | **0** | visionneuse | Réinitialiser le zoom | `renderer/renderer.js` |
-| **X** | tous | Mettre à la corbeille | `renderer/renderer.js` |
-| **R** | tous | Renommer | `renderer/renderer.js` |
+| **X** | tous | Mettre à la corbeille (FN-12) | `renderer/renderer.js` |
+| **Z**, **Cmd+Z**, **Ctrl+Z** | tous | Annuler la dernière action (FN-20) | `renderer/renderer.js` |
+| **R** | tous | Renommer ; plusieurs fichiers : ajouter un préfixe (FN-22) | `renderer/renderer.js` |
+| **M** | tous | Déplacer vers un dossier (FN-23) | `renderer/renderer.js` |
+| **C** | tous | Copier vers un dossier (FN-23) | `renderer/renderer.js` |
 | **G** | Photos | Ouvrir dans GIMP | `renderer/renderer.js` |
 | **S** | Videos | Ouvrir dans Shotcut | `renderer/renderer.js` |
+
+Souris (grille) : **clic** = sélectionner, **double-clic** = ouvrir, **Cmd/Ctrl + clic** = ajouter/retirer, **Shift + clic** = plage (FN-21).
 
 Règles de garde (`renderer/renderer.js`) :
 - Si l'**aide** est ouverte, seule **Échap** est traitée (elle la ferme).
 - Si la **confirmation de suppression** est ouverte, seule **Échap** est traitée (annule) ; **Entrée** est gérée nativement par le bouton focalisé.
 - Si le panneau **Préférences** est ouvert, seule **Échap** est traitée (le ferme).
-- Si la fenêtre de **renommage** est ouverte, le gestionnaire global ne fait rien (le champ gère ses propres touches).
+- Si l'**overlay de progression** d'une copie est affiché, seule **Échap** est traitée (annule la copie, FN-23).
+- Si la fenêtre de **renommage** ou d'**ajout de préfixe** est ouverte, le gestionnaire global ne fait rien (le champ gère ses propres touches).
 - Si le focus est dans un champ `INPUT`, `SELECT` ou `TEXTAREA` (liste de tri, cases à cocher), les touches ne sont pas interceptées.
 
-**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement.
+**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement. Exceptions depuis la 1.2.0 : **Cmd/Ctrl+A** (tout sélectionner, alors que A seul ne fait rien), **Shift + flèches** (plage), et **Cmd/Ctrl+Shift+Z**, ignoré faute de « refaire ».
 
 **Focus après un réglage de la barre (résolu le 2026-10-17)** : après un changement de **Sort**, **Subfolders** ou **Maximize**, le contrôle rend le focus à la grille (`blur()`), pour que les flèches naviguent aussitôt dans les vignettes au lieu d'agir sur le contrôle. *(Auparavant, le focus restait sur le `<select>`/la case et les flèches étaient détournées jusqu'à un clic sur la grille.)*
 
-Note : en mode grille, **Échap** ne fait rien (il ne sort que du plein écran). Le libellé « Back » pour Échap vient de l'aide intégrée et du CHANGELOG, pas du README racine (qui dit « leave fullscreen ») — comportement cohérent avec le code.
+Note : en mode grille, **Échap** réduit une sélection multiple au fichier courant (depuis la 1.2.0) ; en plein écran, il ferme la visionneuse.
 
 ## 11. Aide
 
 ### FN-18 Fenêtre des raccourcis
 - Ouverte par le bouton **ⓘ** ; fermée par **Close**, **Échap** ou un clic à l'extérieur (`renderer/renderer.js`).
-- Liste les raccourcis de la table FN-17, dans l'ordre de l'interface (`renderer/index.html`).
+- Liste les raccourcis de la table FN-17, y compris les gestes de souris de la sélection (`renderer/index.html`).
 - Pendant son ouverture, les autres touches sont ignorées.
 
 ## 12. Taille des vignettes
@@ -239,13 +249,56 @@ Note : en mode grille, **Échap** ne fait rien (il ne sort que du plein écran).
 - Préférences : voir [config.md §3](config.md#3-préférences-persistées).
 - Aucune journalisation applicative n'est écrite sur disque.
 
-## 14. Comportements non couverts par le code
+## 14. Annulation, sélection multiple et actions groupées (1.2.0)
+
+### FN-20 Annulation (Z, Cmd+Z, Ctrl+Z)
+- **Pile des 10 dernières actions**, tenue par le processus principal (`lib/undo.js`, `createUndoStack`) et journalisée dans `<userData>/undo-journal.json` (écriture atomique) à chaque changement. Pas de « refaire ».
+- Une entrée = une liste d'opérations typées ; une rafale (5 fichiers à la corbeille, 20 préfixes, 30 fichiers déplacés) est **une seule** entrée, annulée d'un coup :
+
+  | Action | Annulation |
+  |---|---|
+  | Corbeille (FN-12) | le fichier sort du staging et revient à sa place |
+  | Renommage (FN-13, FN-22) | le nom d'origine est rétabli |
+  | Déplacement (FN-23) | retour dans le dossier source ; entre volumes, recopie avec progression et contrôle d'espace |
+  | Copie (FN-23) | la copie part à la corbeille système (jamais de suppression définitive) |
+
+- Les opérations sont rejouées en ordre inverse ; un échec ponctuel (fichier supprimé entre-temps) n'arrête pas les autres et est signalé. Si l'emplacement d'origine est occupé, le fichier revient avec un suffixe ` (n)`.
+- Après annulation : la liste est rechargée et les fichiers restaurés sont **sélectionnés** ; message « Undone: <libellé> » (pile vide : « Nothing to undo »).
+- Annuler un déplacement entre volumes est **refusé d'emblée** (entrée conservée) s'il n'y a pas la place ; si on l'interrompt (Cancel), les fichiers non revenus restent annulables.
+- **Éviction** : à la 11ᵉ action, la plus ancienne sort de la pile ; ses fichiers en staging partent à la corbeille système.
+- **Purge** : au lancement (reprise après crash, d'après le journal) et en quittant (`before-quit`, borné à 10 s), tous les fichiers en staging partent à la corbeille système ; l'historique ne survit donc pas à un redémarrage. Sous macOS, fermer la fenêtre sans quitter garde la pile. Seule l'instance principale purge.
+- `fs:list` n'affiche jamais `.media-sorter-staging`, même avec les fichiers cachés visibles.
+
+### FN-21 Sélection multiple
+- État : `cursor` (fichier courant : visionneuse, Entrée, G/S), `sel` (ensemble de **chemins**) et `anchor` (origine des plages) (`renderer/renderer.js`).
+- **Clic** : sélectionne ce seul fichier, **sans l'ouvrir**. **Double-clic** : ouvre (FN-08, FN-11).
+- **Cmd/Ctrl + clic** : ajoute ou retire le fichier. **Shift + clic** et **Shift + flèches** : plage depuis l'ancre. **Cmd/Ctrl + A** : tout sélectionner. **Échap** : réduit au fichier courant. Les flèches seules réduisent la sélection au fichier atteint.
+- Rendu : bordure bleue sur les fichiers sélectionnés ; contour blanc sur le curseur quand plusieurs fichiers sont sélectionnés ou qu'il est hors sélection. Compteur : « 42 photos · 5 selected ».
+- La sélection survit au re-tri, au changement de types et à l'annulation (fichiers toujours listés) ; un nouveau dossier ou un changement de mode repart du premier fichier.
+- En visionneuse, la sélection est ignorée : les actions portent sur la photo affichée.
+
+### FN-22 Renommage en masse (préfixe)
+- **R** avec plusieurs fichiers sélectionnés ouvre « Add a prefix to N files » (`prefixModal`) avec un aperçu « avant → après » des 10 premiers, mis à jour à la frappe. Le bouton est désactivé tant que le préfixe est vide.
+- `file:renameBatch` (`main.js`) renomme chaque fichier en `<préfixe><nom>` dans son propre dossier, un par un ; les séparateurs `/` `\` du préfixe deviennent `_` ; une collision reçoit ` (n)` (l'aperçu ne l'anticipe pas, le message final compte les suffixes).
+- Tout le lot est **une** entrée d'annulation. Message « Prefixed N files · Z to undo ».
+
+### FN-23 Déplacement et copie (M, C)
+- **M** (déplacer) ou **C** (copier) ouvre le sélecteur natif de dossier ; les fichiers visés sont la sélection (ou la photo affichée).
+- `file:transfer` (`main.js`) :
+  - déplacement sur le **même volume** : `rename`, instantané ;
+  - **copie**, ou déplacement **entre volumes** : copie en flux avec progression (`lib/fileops.js`, `copyWithProgress` : fichier `.part` puis renommage, date de modification conservée), puis, pour un déplacement, vérification de taille et suppression de la source ;
+  - **contrôle d'espace** avant de commencer : il faut les octets à copier plus une marge de max(200 Mo, 1 % du volume), sinon refus avec un message (« not enough space in … ») ;
+  - collision de nom : suffixe ` (n)` ; déplacer un fichier vers son propre dossier est ignoré (« already there »).
+- **Overlay de progression** (nom, n/N, octets, bouton Cancel ; Échap annule) affiché seulement quand des octets sont copiés. Une annulation abandonne le fichier en cours (source intacte, `.part` supprimé) ; les fichiers déjà traités le restent.
+- Tout le lot (même partiel) est **une** entrée d'annulation. Après un déplacement, la liste est rechargée (les fichiers la quittent) ; après une copie, seulement si la destination est sous le dossier courant.
+- Note : annuler une copie sur un volume externe l'envoie à la corbeille **de ce volume**, qui garde la place occupée jusqu'au vidage de la corbeille.
+
+## 15. Comportements non couverts par le code
 
 Ces points sont absents de l'application ; ils sont listés pour éviter toute ambiguïté :
 
-- aucun déplacement ni copie de fichier ;
-- aucune annulation après coup (la suppression est toutefois confirmée par défaut, et récupérable depuis la corbeille système) ;
+- aucun classement assisté (dossiers favoris, destinations en un geste) : M et C passent par le sélecteur de dossier ;
+- aucun « refaire » après une annulation, et pas d'historique d'annulation après un redémarrage ;
 - aucun raccourci de lecture vidéo intégrée ;
 - aucune recherche ni filtre par nom (hors extensions) ;
-- aucune action sur plusieurs fichiers à la fois (sélection multiple) ;
 - aucune mémorisation du dossier ouvert ni de la position de la sélection.

@@ -1,9 +1,9 @@
 # Media Sorter : documentation de spécifications
 
 Spécifications fonctionnelles et techniques de **Media Sorter**, trieur de photos et vidéos en Electron.
-Version documentée : **1.1.0**.
+Version documentée : **1.2.0**.
 
-Ces documents sont **reconstitués à partir du code source** (`main.js`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`).
+Ces documents sont **reconstitués à partir du code source** (`main.js`, `lib/`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`).
 
 ## Sommaire
 
@@ -11,10 +11,10 @@ Ces documents sont **reconstitués à partir du code source** (`main.js`, `prelo
 |---|---|
 | [overview.md](overview.md) | But de l'application, personas, périmètre, workflow de tri, glossaire |
 | [architecture.md](architecture.md) | Processus Electron, pont IPC, renderer, flux de données, dépendances, sécurité |
-| [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-19` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis |
+| [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-23` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis, annulation, sélection multiple, renommage en masse, déplacement/copie |
 | [build-and-deploy.md](build-and-deploy.md) | Scripts npm, build macOS et Ubuntu, installation, versioning, publication |
 | [config.md](config.md) | Constantes, préférences persistées, formats, cache, chemins système, variables d'environnement |
-| [roadmap.md](roadmap.md) | Plan 1.2.0 : annulation (10 actions), multi-sélection, renommage en masse, déplacement/copie |
+| [roadmap.md](roadmap.md) | Plan (réalisé) de la 1.2.0 : annulation, multi-sélection, renommage en masse, déplacement/copie |
 
 Les références au code citent le **fichier** et le **symbole** concerné (fonction, constante) ; elles ne portent pas de numéro de ligne, qui dériverait à mesure que le code évolue.
 
@@ -35,7 +35,7 @@ Pistes d'amélioration non encore réalisées, par effort croissant. Optionnelle
 ## Hors périmètre actuel
 
 - Windows : aucune configuration de build ni de test.
-- Déplacement, copie et classement de fichiers *(planifiés pour la 1.2.0, sauf le classement complet : voir [roadmap.md](roadmap.md))*.
-- Annulation des actions *(planifiée pour la 1.2.0)*.
+- Classement assisté (dossiers favoris, destinations en un geste) : la 1.2.0 se limite au sélecteur de dossier pour déplacer/copier.
+- « Refaire » après une annulation.
 - Lecture vidéo intégrée.
 - Tests automatisés et linting.

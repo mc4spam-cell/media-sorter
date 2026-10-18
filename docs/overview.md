@@ -1,13 +1,13 @@
 # Media Sorter : vue d'ensemble
 
-> Spécifications reconstituées à partir du code source (version **1.1.0**).
+> Spécifications reconstituées à partir du code source (version **1.2.0**).
 > Les pistes d'amélioration encore ouvertes sont listées dans [README.md](README.md#évolutions-possibles).
 
 ## 1. But de l'application
 
 Media Sorter est une application de bureau (Electron) qui permet de **trier rapidement des photos et des vidéos** présentes dans un dossier : on parcourt les fichiers un à un, on regarde, on supprime ce qui ne sert pas, on renomme ce qu'on garde, et on ouvre si besoin un fichier dans un éditeur externe.
 
-Le mot « trier » désigne ici un **tri par revue** (garder / jeter / renommer). L'application **ne déplace ni ne copie jamais de fichier** vers d'autres dossiers : aucune commande de classement n'existe dans `main.js` ni dans le renderer. La seule opération sur le système de fichiers, hors lecture, est la mise à la corbeille (`file:trash`) et le renommage sur place (`file:rename`).
+Le mot « trier » désigne ici un **tri par revue** (garder / jeter / renommer / ranger). Les opérations sur le système de fichiers, hors lecture, sont : la mise à la corbeille (`file:trash`, via un staging annulable), le renommage sur place (`file:rename`, `file:renameBatch`) et, depuis la 1.2.0, le déplacement ou la copie vers un dossier choisi (`file:transfer`). Chacune peut s'appliquer à une sélection de plusieurs fichiers et s'annule (10 dernières actions).
 
 ## 2. Personas et contexte d'usage
 
@@ -15,7 +15,7 @@ Déduit du README (`README.md:3-4`) et de l'historique git ; il ne s'agit pas d'
 
 | Persona | Besoin | Ce que l'app lui apporte |
 |---|---|---|
-| **Trieur de médias personnels** (usage principal : l'auteur) | Passer en revue de grands dossiers de photos et vidéos (souvent issus d'appareils ou de sauvegardes) | Navigation clavier, aperçu plein écran, corbeille système, renommage rapide |
+| **Trieur de médias personnels** (usage principal : l'auteur) | Passer en revue de grands dossiers de photos et vidéos (souvent issus d'appareils ou de sauvegardes) | Navigation clavier, aperçu plein écran, corbeille annulable, renommage rapide (aussi en masse), sélection multiple, déplacement/copie vers un dossier |
 | **Utilisateur de dossiers imbriqués** | Trier un arbre de sous-dossiers sans l'ouvrir dossier par dossier | Option « Subfolders » (scan récursif) avec chemin relatif affiché |
 | **Retoucheur occasionnel** | Ouvrir une photo dans GIMP ou une vidéo dans Shotcut sans quitter le tri | Raccourcis `G` et `S` |
 
@@ -30,14 +30,16 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
 - Tri par nom ou date de modification, ascendant ou descendant.
 - Scan récursif des sous-dossiers.
 - Activation/désactivation des extensions par mode.
-- Mise à la corbeille, renommage, ouverture dans GIMP / Shotcut.
+- Sélection multiple (Cmd/Ctrl-clic, Shift-clic, Cmd/Ctrl+A).
+- Mise à la corbeille, renommage (y compris ajout d'un préfixe en masse), déplacement et copie vers un dossier, ouverture dans GIMP / Shotcut.
+- Annulation des 10 dernières actions (Z, Cmd/Ctrl+Z).
 - Ouverture d'un fichier depuis le gestionnaire de fichiers (« Ouvrir avec »).
 - Mémorisation de certaines préférences entre les lancements.
 
 **Exclus (absent du code)**
 
-- Déplacement, copie ou classement dans des dossiers.
-- Annulation (undo) d'une suppression ou d'un renommage ; la récupération passe par la corbeille du système.
+- Classement assisté (dossiers favoris, destinations en un geste) : déplacer/copier passe par le sélecteur de dossier.
+- « Refaire » après une annulation, et historique d'annulation après un redémarrage.
 - Édition des images ou des vidéos dans l'application.
 - Lecture vidéo intégrée (les vidéos sont confiées au lecteur du système, car Chromium ne décode pas avi/mpg/mkv).
 - Mise à jour automatique (voir [build-and-deploy.md](build-and-deploy.md#5-versioning-et-publication)).
@@ -54,18 +56,21 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
           ▼
  Parcourir avec ← → (↑ ↓)
           │
-          ├── Photo : Entrée → visionneuse plein écran (zoom, ← → pour passer à la suivante, Échap pour sortir)
-          ├── Vidéo : Entrée ou clic → lecteur système
+          ├── Photo : Entrée ou double-clic → visionneuse plein écran (zoom, ← → pour passer à la suivante, Échap pour sortir)
+          ├── Vidéo : Entrée ou double-clic → lecteur système
+          ├── Sélection multiple : Cmd/Ctrl-clic, Shift-clic, Shift+flèches, Cmd/Ctrl+A
           │
           ▼
- Décider pour le fichier courant :
-   X  → corbeille système (confirmation par défaut ; désactivable dans ⚙ Préférences)
-   R  → renommer (fenêtre de saisie)
+ Décider pour le fichier courant ou la sélection :
+   X  → corbeille (confirmation par défaut ; désactivable dans ⚙ Préférences)
+   R  → renommer (fenêtre de saisie ; plusieurs fichiers : ajouter un préfixe)
+   M / C → déplacer / copier vers un dossier
    G  → GIMP (photo)     S → Shotcut (vidéo)
+   Z  → annuler la dernière action
    (rien) → passer au suivant
 ```
 
-Le fichier sélectionné reste à la même position après une suppression (la sélection passe au suivant, ou au précédent si l'élément supprimé était le dernier).
+Après une suppression, le curseur se place à la position du premier fichier supprimé (donc sur le suivant, ou sur le dernier élément si la fin de liste a été supprimée).
 
 ## 5. Glossaire
 
@@ -75,5 +80,7 @@ Le fichier sélectionné reste à la même position après une suppression (la s
 | **Item** | Fichier listé : `{ name, path, mtimeMs, rel }` (`main.js`) |
 | **Stop-motion** | Miniature vidéo qui alterne plusieurs images extraites à intervalle de 60 s, affichées 1 s chacune en boucle (`renderer/renderer.js`) |
 | **Maximize** | Option qui agrandit les photos en plein écran jusqu'à remplir la fenêtre (`renderer/renderer.js`) |
-| **Corbeille** | Corbeille du système, via le paquet `trash` (`main.js`) |
+| **Corbeille** | Corbeille du système, via le paquet `trash` (`main.js`), atteinte après un passage par le staging d'annulation (`lib/undo.js`) |
+| **Staging** | Dossier caché `.media-sorter-staging/` créé à côté d'un fichier mis à la corbeille, tant que l'action reste annulable (`lib/undo.js`) |
+| **Curseur / sélection** | Fichier courant (`state.cursor`) et ensemble des fichiers sélectionnés (`state.sel`) (`renderer/renderer.js`) |
 | **Frames** | Images JPEG extraites d'une vidéo, mises en cache (`main.js`) |

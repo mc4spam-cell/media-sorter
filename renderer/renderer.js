@@ -1254,8 +1254,8 @@ document.addEventListener('keydown', (e) => {
     if (!state.fullscreen) selectAll();
     return;
   }
-  // Other shortcuts are bare keys: Cmd+X, Ctrl+R… must not trigger them.
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  // Other shortcuts deliberately ignore modifiers (Cmd+X acts like X): robust
+  // when Ctrl/Cmd/Option mappings differ (VMs, macOS vs Linux). See FN-17.
   switch (e.key) {
     case 'ArrowRight':
     case 'ArrowDown':

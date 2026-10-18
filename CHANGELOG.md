@@ -4,6 +4,35 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.2.0] — 2026-10-18
+
+### Added
+- **Undo (Z, Cmd+Z, Ctrl+Z).** The last 10 actions can be undone: trash,
+  rename, prefix rename, move and copy. A burst (5 files trashed, 30 files
+  moved) is undone in one go, and the restored files are selected. A trashed
+  file is first parked in a hidden `.media-sorter-staging` folder next to it
+  (instant whatever its size); it reaches the system trash, under its
+  original name and location, once it leaves the undo history or when the
+  app quits or relaunches (crash recovery). Read-only folders fall back to a
+  direct, non-undoable trash.
+- **Multi-selection.** Cmd/Ctrl-click toggles a file, Shift-click and
+  Shift+arrows select a range, Cmd/Ctrl+A selects all, Esc keeps only the
+  current file. X trashes the whole selection (one confirmation, one undo).
+  The selection survives re-sorting and type filters.
+- **Batch rename by prefix.** R with several files selected adds a prefix to
+  every name, with a live before → after preview; collisions get " (n)".
+- **Move / copy to a folder (M / C).** Same-disk moves are instant; copies
+  and moves to another disk stream with a progress bar and Cancel (Esc),
+  after checking free space (plus a safety margin), and keep the file's
+  modification date. Name clashes get " (n)".
+
+### Changed
+- **Click selects, double-click opens** a thumbnail (photo viewer or video
+  player). Enter still opens the current file.
+- In the fullscreen viewer, X/R/M/C act on the displayed photo only.
+- Error toasts no longer show Electron's "Error invoking remote method"
+  prefix.
+
 ## [1.1.0] — 2026-10-17
 
 ### Added

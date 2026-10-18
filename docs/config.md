@@ -57,7 +57,19 @@ repli        :  ffmpeg -i <fichier> -frames:v 1 -vf scale=400:-2 -y frame_0001.j
 | Taille de vignette par défaut | 200 px | `renderer/styles.css` (repli de `var(--tile)`) |
 | Durée des messages | 1800 ms | `renderer/renderer.js` |
 
-### 2.4 Types de fichiers
+### 2.4 Annulation et transferts (1.2.0)
+
+| Constante | Valeur | Réf. | Effet |
+|---|---|---|---|
+| `MAX_ENTRIES` | 10 | `lib/undo.js` | Taille de la pile d'annulation |
+| `STAGING_DIR` | `.media-sorter-staging` | `lib/undo.js` | Dossier caché, dans le dossier de chaque fichier mis à la corbeille |
+| `STAGING_FALLBACK` | `EACCES`, `EPERM`, `EROFS` | `lib/undo.js` | Erreurs de staging qui basculent vers la corbeille directe (non annulable) |
+| `PURGE_TIMEOUT_MS` | 10 000 | `main.js` | Délai maximal de la purge en quittant |
+| `MIN_MARGIN_BYTES` | 200 Mo | `lib/fileops.js` | Marge d'espace minimale ; la marge réelle est max(200 Mo, 1 % du volume) |
+| `PROGRESS_INTERVAL_MS` | 100 | `main.js` | Fréquence maximale des événements de progression |
+| `PREVIEW_MAX` | 10 | `renderer/renderer.js` | Lignes d'aperçu du renommage en masse |
+
+### 2.5 Types de fichiers
 
 Définis dans `renderer/renderer.js` et répétés dans `package.json` pour les associations système (`build.fileAssociations`).
 
@@ -96,7 +108,7 @@ Comportement :
 - Si `localStorage` est indisponible, les préférences sont simplement non persistées : aucune erreur n'est affichée.
 - Un fichier ouvert via « Ouvrir avec » peut ajouter son extension à `types.<mode>` (`renderer/renderer.js`).
 
-Non persisté : dossier courant, mode actif, sélection, position de défilement, état de la visionneuse.
+Non persisté : dossier courant, mode actif, sélection, historique d'annulation (vidé à chaque lancement, voir features.md FN-20), position de défilement, état de la visionneuse.
 
 ## 4. Cache des images vidéo
 
@@ -132,6 +144,8 @@ Conséquence : une entrée orpheline (vidéo modifiée, renommée ou supprimée)
 |---|---|---|---|
 | Données Electron (`userData`) | `~/Library/Application Support/media-sorter/` | `~/.config/media-sorter/` | `main.js` |
 | Cache des vignettes | `<userData>/frames/` | idem | `main.js` |
+| Journal d'annulation | `<userData>/undo-journal.json` (`{entries, leftovers}`, vidé à chaque purge) | idem | `lib/undo.js` |
+| Staging de la corbeille | `<dossier du fichier>/.media-sorter-staging/<id>__<nom>`, supprimé dès qu'il est vide | idem | `lib/undo.js` |
 | Préférences | `<userData>` → stockage `localStorage` de Chromium | idem | `renderer/renderer.js` |
 | Corbeille | corbeille du Finder (`macos-trash`) | corbeille XDG (`~/.local/share/Trash`) | `main.js`, `node_modules/trash/lib/` |
 | Application installée | `/Applications/Media Sorter.app` (glisser-déposer depuis le `.dmg`) | `.deb` installé par apt (emplacement par défaut de electron-builder, probablement `/opt/`) ; AppImage : fichier portable exécutable | `README.md` |
@@ -168,7 +182,7 @@ Extrait des paramètres pertinents pour la configuration :
 | `build.appId` | `com.mc.mediasorter` | `package.json` |
 | `build.productName` | `Media Sorter` | `package.json` |
 | `build.asar` | `false` | `package.json` |
-| `build.files` | `main.js`, `preload.js`, `renderer/**/*`, `package.json` | `package.json` |
+| `build.files` | `main.js`, `preload.js`, `lib/**/*`, `renderer/**/*`, `package.json` | `package.json` |
 | `build.linux.target` | `AppImage`, `deb` | `package.json` |
 | `build.linux.category` | `Graphics` | `package.json` |
 | `build.mac.target` | `dmg` | `package.json` |
@@ -182,5 +196,5 @@ Détails de packaging et de signature : voir [build-and-deploy.md](build-and-dep
 - Le nombre d'images par vidéo, l'intervalle et la durée d'affichage (constantes §2.2).
 - Les raccourcis clavier (codés dans `renderer/renderer.js`).
 - Les applications d'édition : `GIMP` / `gimp` et `Shotcut` / `shotcut` sont codés en dur (`main.js`).
-- Les types de fichiers au-delà des listes de §2.4.
+- Les types de fichiers au-delà des listes de §2.5.
 - La langue : l'interface est en anglais (libellés) et l'aide des raccourcis aussi ; les commentaires du code sont en anglais.
