@@ -4,6 +4,14 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [Unreleased]
+
+### Fixed
+- **Trashing a file whose name contains glob characters** (`*`, `?`,
+  `{a,b}`, `[…]`) no longer sends other files to the system trash. Paths
+  were expanded as patterns, so trashing `a*.jpg` (or its purge from the
+  undo staging) also trashed `ab.jpg`. Paths are now always taken literally.
+
 ## [1.2.0] — 2026-10-18
 
 ### Added

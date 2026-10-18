@@ -23,11 +23,13 @@ if (ffmpegPath && ffmpegPath.includes('app.asar')) {
 }
 
 // trash@7 is ESM-only; load it lazily from CommonJS.
+// glob: false — trash expands paths as glob patterns by default, so trashing
+// "a*.jpg" would also trash "ab.jpg". Our paths are always literal.
 let trashFn = null;
 async function getTrash() {
   if (!trashFn) {
     const mod = await import('trash');
-    trashFn = mod.default;
+    trashFn = (paths) => mod.default(paths, { glob: false });
   }
   return trashFn;
 }
