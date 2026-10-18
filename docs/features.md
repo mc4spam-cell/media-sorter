@@ -116,7 +116,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js`, `main.js`).
 **Résolu (2026-10-17)** : un `mousedown` sur le fond de la visionneuse (`viewerEl`) remet `dragMoved` à `false` à chaque nouveau clic (`renderer/renderer.js`). Auparavant, `dragMoved` restait vrai après un glisser (réinitialisé seulement au `mousedown` sur l'image zoomée), si bien qu'un clic ultérieur sur le fond noir ne fermait plus la visionneuse ; Échap, lui, fonctionnait déjà.
 
 ### FN-10 Navigation dans la visionneuse
-- **↑ / ↓** : photo précédente / suivante, la visionneuse se met à jour (`renderer/renderer.js`). *(Depuis la 1.2.0 ; ← / → font désormais tourner la photo, FN-24.)*
+- **↑ / ↓** : photo précédente / suivante, la visionneuse se met à jour (`renderer/renderer.js`). *(Depuis la 1.2.1 ; ← / → font désormais tourner la photo, FN-24.)*
 - Les flèches sont interceptées (`preventDefault`) : elles ne font pas défiler la page.
 
 ## 7. Lecture des vidéos
@@ -296,7 +296,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
 - Tout le lot (même partiel) est **une** entrée d'annulation. Après un déplacement, la liste est rechargée (les fichiers la quittent) ; après une copie, seulement si la destination est sous le dossier courant.
 - Note : annuler une copie sur un volume externe l'envoie à la corbeille **de ce volume**, qui garde la place occupée jusqu'au vidage de la corbeille.
 
-### FN-24 Rotation des photos (← / →)
+### FN-24 Rotation des photos (← / →) — 1.2.1
 - **←** tourne de 90° dans le sens anti-horaire, **→** dans le sens horaire. En grille : toute la sélection (FN-21) ; en visionneuse : la photo affichée. En mode **Videos**, ← / → ne font rien. **↑ / ↓** gardent la navigation.
 - La rotation est **enregistrée dans le fichier**, sans perte (`lib/rotate.js`, `rotateFile`, IPC `file:rotate`) :
   - **JPEG** : seule l'étiquette EXIF *Orientation* est réécrite (ou ajoutée), donc instantané, sans réencodage, et toutes les autres métadonnées (date de prise de vue, GPS…) sont conservées. Chromium, comme les visionneuses usuelles, affiche l'image selon cette étiquette ;

@@ -1,6 +1,6 @@
 {
   "name": "media-sorter",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Sort photos and videos with thumbnail/fullscreen views, keyboard navigation, multi-selection, undoable trash, rename, move and copy.",
   "main": "main.js",
   "scripts": {

@@ -1,7 +1,7 @@
 # Build, déploiement et versioning
 
 > Références au code : fichier et symbole, sans numéro de ligne ; chemins relatifs à la racine du projet.
-> Version documentée : **1.2.0** (`package.json`, `CHANGELOG.md`).
+> Version documentée : **1.2.1** (`package.json`, `CHANGELOG.md`).
 > Voir aussi [config.md §7](config.md#7-configuration-de-build-packagejson) pour la configuration `electron-builder`.
 
 ## 1. Prérequis
@@ -154,9 +154,10 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 | 1.0.0 | 2026-06-04 | Version initiale (macOS + Linux) | `v1.0.0` |
 | 1.0.1 | 2026-06-06 | Correctif : lancement sain des applications externes depuis l'AppImage | `v1.0.1` |
 | 1.1.0 | 2026-10-17 | Bouton des raccourcis, « Ouvrir avec » | `v1.1.0` |
-| 1.2.0 | 2026-10-18 | Annulation (10 actions), sélection multiple, renommage en masse, déplacement/copie, Cmd/Ctrl+touche = touche seule | à poser (`v1.2.0`) |
+| 1.2.0 | 2026-10-18 | Annulation (10 actions), sélection multiple, renommage en masse, déplacement/copie, Cmd/Ctrl+touche = touche seule | `v1.2.0` |
+| 1.2.1 | 2026-10-19 | Rotation sans perte (← / →, ↑ / ↓ naviguent), corbeille sans interprétation glob | `v1.2.1` |
 
-Les tags `v1.0.0` à `v1.1.0` existent dans le dépôt (`git tag -l`) ; `v1.2.0` sera posé à la publication. Le commit `889e4a2` est intitulé « Release 1.1.0 », `f66e9aa` « Release 1.2.0 ».
+Les tags `v1.0.0` à `v1.2.1` existent dans le dépôt (`git tag -l`). `v1.2.0` pointe sur `063e390` (avant la rotation). Le commit `889e4a2` est intitulé « Release 1.1.0 », `f66e9aa` « Release 1.2.0 ».
 
 ### 5.3 Procédure de sortie
 

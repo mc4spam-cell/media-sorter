@@ -39,7 +39,7 @@ Il n'y a **ni framework front, ni bundler, ni base de données**. Le renderer es
 | `main.js` | Processus principal (~800 lignes) |
 | `lib/fileops.js` | Helpers fichiers sans dépendance Electron : `uniqueTarget`, `sameVolume`, `diskSpace` / `hasRoomFor`, `copyWithProgress`, `moveFile` (depuis la 1.2.0) |
 | `lib/undo.js` | Pile d'annulation journalisée et staging de la corbeille (depuis la 1.2.0) |
-| `lib/rotate.js` | Rotation de 90° sans perte : orientation EXIF des JPEG, pixels via ffmpeg pour PNG/BMP/WebP (depuis la 1.2.0) |
+| `lib/rotate.js` | Rotation de 90° sans perte : orientation EXIF des JPEG, pixels via ffmpeg pour PNG/BMP/WebP (depuis la 1.2.1) |
 | `preload.js` | Pont `window.api` (~35 lignes) |
 | `renderer/index.html` | Interface, CSP, modales |
 | `renderer/renderer.js` | Logique d'interface (~1300 lignes) |
