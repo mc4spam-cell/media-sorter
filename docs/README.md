@@ -11,10 +11,10 @@ Ces documents sont **reconstitués à partir du code source** (`main.js`, `lib/`
 |---|---|
 | [overview.md](overview.md) | But de l'application, personas, périmètre, workflow de tri, glossaire |
 | [architecture.md](architecture.md) | Processus Electron, pont IPC, renderer, flux de données, dépendances, sécurité |
-| [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-23` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis, annulation, sélection multiple, renommage en masse, déplacement/copie |
+| [features.md](features.md) | Spécifications détaillées `FN-01` à `FN-24` : dossiers, types, tri, grille, vidéos, visionneuse, actions, raccourcis, annulation, sélection multiple, renommage en masse, déplacement/copie, rotation |
 | [build-and-deploy.md](build-and-deploy.md) | Scripts npm, build macOS et Ubuntu, installation, versioning, publication |
 | [config.md](config.md) | Constantes, préférences persistées, formats, cache, chemins système, variables d'environnement |
-| [roadmap.md](roadmap.md) | Plan (réalisé) de la 1.2.0 : annulation, multi-sélection, renommage en masse, déplacement/copie |
+| [roadmap.md](roadmap.md) | Plan (réalisé) de la 1.2.0 : annulation, multi-sélection, renommage en masse, déplacement/copie, rotation |
 
 Les références au code citent le **fichier** et le **symbole** concerné (fonction, constante) ; elles ne portent pas de numéro de ligne, qui dériverait à mesure que le code évolue.
 

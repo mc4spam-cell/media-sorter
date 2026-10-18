@@ -251,7 +251,7 @@ function renderGrid() {
       // Native lazy-loading: thousands of off-screen photos aren't decoded
       // until they approach the viewport.
       img.loading = 'lazy';
-      img.src = api.toFileURL(item.path);
+      img.src = photoSrc(item);
       // Some files can't be decoded (corrupt / unexpected codec) — show the ext.
       img.addEventListener('error', () => {
         if (cell.querySelector('.badge')) return;
@@ -529,7 +529,7 @@ function updateViewer() {
   if (!item) return closeViewer();
   resetZoom();
   hideViewerError();
-  viewerImg.src = api.toFileURL(item.path);
+  viewerImg.src = photoSrc(item);
   viewerCaption.textContent = `${item.name}  ·  ${state.cursor + 1}/${state.items.length}`;
 }
 
@@ -738,6 +738,8 @@ async function undoLast() {
       toast('Nothing to undo');
       return;
     }
+    // An undone rotation rewrote the file under the same path: refresh its image.
+    bumpRevs(res.restored);
     await loadList();
     // Land on the restored file(s), selected together (refreshes the viewer).
     if (!selectPaths(res.restored)) {
@@ -801,6 +803,53 @@ async function confirmRename() {
   } catch (e) {
     toast('Rename failed: ' + errMsg(e));
   }
+}
+
+// ---------- Rotate (← / →) ----------
+// Photos are rotated in the file itself (lossless, see lib/rotate.js). A file
+// rewritten under the same path would keep showing from Chromium's image cache,
+// so each rotated path gets a revision number appended to its file:// URL.
+const revs = new Map(); // path -> revision
+function photoSrc(item) {
+  const r = revs.get(item.path);
+  return api.toFileURL(item.path) + (r ? `?r=${r}` : '');
+}
+function bumpRevs(paths) {
+  for (const p of paths) revs.set(p, (revs.get(p) || 0) + 1);
+}
+
+// Rotations run one after another, so holding an arrow key queues them.
+let rotateChain = Promise.resolve();
+function rotateTargets(dir) {
+  if (state.kind !== 'photos') return;
+  const items = actionTargets();
+  if (!items.length) return;
+  rotateChain = rotateChain.then(() => doRotate(items, dir));
+}
+
+async function doRotate(items, dir) {
+  let res;
+  try {
+    res = await api.rotate(items.map((it) => it.path), dir);
+  } catch (e) {
+    toast('Rotate failed: ' + errMsg(e));
+    return;
+  }
+  bumpRevs(res.rotated);
+  // Refresh only the rotated thumbnails (a full re-render would lose the scroll).
+  const done = new Set(res.rotated);
+  state.items.forEach((it, i) => {
+    if (!done.has(it.path) || !cells[i]) return;
+    const img = cells[i].querySelector('img');
+    if (img) img.src = photoSrc(it);
+  });
+  if (state.fullscreen && cursorItem() && done.has(cursorItem().path)) updateViewer();
+
+  const n = res.rotated.length;
+  const side = dir === 'cw' ? 'right' : 'left';
+  let msg = n ? `Rotated ${n === 1 ? items.find((it) => done.has(it.path)).name : n + ' files'} ${side} · Z to undo` : 'Nothing rotated';
+  if (res.errors.length) msg += ` · ${res.errors.length} failed (${res.errors[0].message})`;
+  toast(msg);
 }
 
 // ---------- Batch rename (prefix) ----------
@@ -1254,15 +1303,22 @@ function onKey(e) {
       e.preventDefault();
       if (!state.fullscreen) selectAll(); // grid only
       break;
-    case 'ArrowRight':
     case 'ArrowDown':
       e.preventDefault();
       move(1, e.shiftKey); // Shift extends the selection
       break;
-    case 'ArrowLeft':
     case 'ArrowUp':
       e.preventDefault();
       move(-1, e.shiftKey);
+      break;
+    // ← / → rotate photos 90° (counter-clockwise / clockwise); no-op for videos.
+    case 'ArrowLeft':
+      e.preventDefault();
+      rotateTargets('ccw');
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      rotateTargets('cw');
       break;
     case 'Enter':
       if (state.fullscreen) break;

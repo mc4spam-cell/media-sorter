@@ -31,6 +31,7 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
 - Scan récursif des sous-dossiers.
 - Activation/désactivation des extensions par mode.
 - Sélection multiple (Cmd/Ctrl-clic, Shift-clic, A).
+- Rotation des photos de 90° (← / →), enregistrée sans perte dans le fichier.
 - Mise à la corbeille, renommage (y compris ajout d'un préfixe en masse), déplacement et copie vers un dossier, ouverture dans GIMP / Shotcut.
 - Annulation des 10 dernières actions (Z ; Cmd/Ctrl+touche = touche seule).
 - Ouverture d'un fichier depuis le gestionnaire de fichiers (« Ouvrir avec »).
@@ -54,16 +55,17 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
  Choisir le mode : onglet Photos  ou  onglet Videos
           │   (+ optionnel : tri, sous-dossiers, types d'extensions)
           ▼
- Parcourir avec ← → (↑ ↓)
+ Parcourir avec ↑ ↓   (← → font tourner la photo de 90°)
           │
-          ├── Photo : Entrée ou double-clic → visionneuse plein écran (zoom, ← → pour passer à la suivante, Échap pour sortir)
+          ├── Photo : Entrée ou double-clic → visionneuse plein écran (zoom, ↑ ↓ pour passer à la suivante, ← → pour la tourner, Échap pour sortir)
           ├── Vidéo : Entrée ou double-clic → lecteur système
-          ├── Sélection multiple : Cmd/Ctrl-clic, Shift-clic, Shift+flèches, A
+          ├── Sélection multiple : Cmd/Ctrl-clic, Shift-clic, Shift+↑↓, A
           │
           ▼
  Décider pour le fichier courant ou la sélection :
    X  → corbeille (confirmation par défaut ; désactivable dans ⚙ Préférences)
    R  → renommer (fenêtre de saisie ; plusieurs fichiers : ajouter un préfixe)
+   ← / → → tourner de 90° (enregistré dans le fichier, sans perte)
    M / C → déplacer / copier vers un dossier
    G  → GIMP (photo)     S → Shotcut (vidéo)
    Z  → annuler la dernière action

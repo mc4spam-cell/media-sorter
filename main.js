@@ -14,6 +14,7 @@ const {
   moveFile,
 } = require('./lib/fileops');
 const { createUndoStack, STAGING_DIR } = require('./lib/undo');
+const { rotateFile } = require('./lib/rotate');
 // ffmpeg-static resolves to a bundled binary. If the app is ever packed into an
 // asar, the executable lives in the unpacked sibling dir — handle both.
 let ffmpegPath = require('ffmpeg-static');
@@ -181,6 +182,7 @@ if (!gotLock) {
       journalPath: path.join(app.getPath('userData'), 'undo-journal.json'),
       trash: async (p) => (await getTrash())(p),
       beginTransfer,
+      rotate: (p, dir) => rotateFile(p, dir, { ffmpegPath }),
     });
     // Recover from a crash: whatever the last run left staged goes to the OS
     // trash. Queued ahead of any trash/undo the user triggers.
@@ -515,6 +517,32 @@ ipcMain.handle('file:transfer', async (_e, paths, destDir, mode) => {
     await undoStack.record(`${verb} ${what} to ${path.basename(destDir)}`, ops);
   }
   return { done: ops.map(({ from, to }) => ({ from, to })), skipped, errors, cancelled };
+});
+
+// ---------- IPC: rotate photos 90° ----------
+// Rotates each file in place (lib/rotate.js: lossless; mtime kept), one at a
+// time. The batch is ONE undo entry. Returns { rotated: [path], errors }.
+ipcMain.handle('file:rotate', async (_e, paths, dir) => {
+  if (dir !== 'cw' && dir !== 'ccw') throw new Error('Unknown direction: ' + dir);
+  const rotated = [];
+  const errors = [];
+  for (const p of [].concat(paths)) {
+    try {
+      await assertRegularFile(p);
+      await rotateFile(p, dir, { ffmpegPath });
+      rotated.push(p);
+    } catch (e) {
+      errors.push({ path: p, message: e.message });
+    }
+  }
+  if (rotated.length) {
+    const what = rotated.length === 1 ? path.basename(rotated[0]) : `${rotated.length} files`;
+    await undoStack.record(
+      `Rotate ${what} ${dir === 'cw' ? 'right' : 'left'}`,
+      rotated.map((p) => ({ type: 'rotate', path: p, dir }))
+    );
+  }
+  return { rotated, errors };
 });
 
 // ---------- IPC: batch rename (prefix) ----------

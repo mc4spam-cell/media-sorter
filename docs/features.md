@@ -116,7 +116,7 @@ Chaque vidéo a une vignette animée (`renderer/renderer.js`, `main.js`).
 **Résolu (2026-10-17)** : un `mousedown` sur le fond de la visionneuse (`viewerEl`) remet `dragMoved` à `false` à chaque nouveau clic (`renderer/renderer.js`). Auparavant, `dragMoved` restait vrai après un glisser (réinitialisé seulement au `mousedown` sur l'image zoomée), si bien qu'un clic ultérieur sur le fond noir ne fermait plus la visionneuse ; Échap, lui, fonctionnait déjà.
 
 ### FN-10 Navigation dans la visionneuse
-- **← / →** (aussi **↑ / ↓**) : photo précédente / suivante, la visionneuse se met à jour (`renderer/renderer.js`).
+- **↑ / ↓** : photo précédente / suivante, la visionneuse se met à jour (`renderer/renderer.js`). *(Depuis la 1.2.0 ; ← / → font désormais tourner la photo, FN-24.)*
 - Les flèches sont interceptées (`preventDefault`) : elles ne font pas défiler la page.
 
 ## 7. Lecture des vidéos
@@ -195,9 +195,11 @@ Comportement côté interface (`renderer/renderer.js`) :
 
 | Touche | Mode | Action | Réf. |
 |---|---|---|---|
-| **←** / **↑** | tous | Élément précédent (la sélection se réduit à lui) | `renderer/renderer.js` |
-| **→** / **↓** | tous | Élément suivant (idem) | `renderer/renderer.js` |
-| **Shift + flèches** | grille | Étendre la sélection en plage (FN-21) | `renderer/renderer.js` |
+| **↑** | tous | Élément précédent (la sélection se réduit à lui) | `renderer/renderer.js` |
+| **↓** | tous | Élément suivant (idem) | `renderer/renderer.js` |
+| **Shift + ↑ / ↓** | grille | Étendre la sélection en plage (FN-21) | `renderer/renderer.js` |
+| **←** | Photos | Tourner de 90° dans le sens anti-horaire (FN-24) | `renderer/renderer.js` |
+| **→** | Photos | Tourner de 90° dans le sens horaire (FN-24) | `renderer/renderer.js` |
 | **A** | grille | Tout sélectionner (FN-21) | `renderer/renderer.js` |
 | **Entrée** | Photos | Ouvrir la visionneuse (sans effet si déjà ouverte) | `renderer/renderer.js` |
 | **Entrée** | Videos | Lancer dans le lecteur système | `renderer/renderer.js` |
@@ -221,7 +223,7 @@ Règles de garde (`renderer/renderer.js`) :
 - Si la fenêtre de **renommage** ou d'**ajout de préfixe** est ouverte, le gestionnaire global ne fait rien (le champ gère ses propres touches).
 - Si le focus est dans un champ `INPUT`, `SELECT` ou `TEXTAREA` (liste de tri, cases à cocher), les touches ne sont pas interceptées.
 
-**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** `Ctrl` et `Cmd`. `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement. **Garanti sans exception depuis la 1.2.0** : chaque raccourci avec `Cmd` ou `Ctrl` produit exactement l'effet de la touche seule (`Cmd+A` = `A`, `Ctrl+Shift+Z` = `Shift+Z` = `Z`…). Le menu d'application par défaut d'Electron, actif même barre masquée et sous Linux, interceptait auparavant `Cmd/Ctrl+R` (rechargement de l'app), `+M` (réduction de la fenêtre), `+Z/X/C/A` (édition) et `+0` (zoom) : le processus principal les capte désormais (`before-input-event`, `FORWARDED_SHORTCUTS`, `main.js`) et les renvoie au renderer comme la touche seule (événement `shortcut`), traitée par le même gestionnaire `onKey`. Exception voulue : quand un **champ texte** a le focus (renommage, préfixe), ces combinaisons restent des raccourcis d'édition (tout sélectionner, copier, coller, annuler la saisie) ; le renderer signale ce focus au main (`ui:textEditing`). `Cmd/Ctrl+Q`, `+W` et `+H` restent au menu (quitter, fermer, masquer). Seul `Shift` a un sens propre (étendre la sélection avec les flèches). `Option`/`Alt` n'est pas couvert : sur macOS, Option+lettre produit un autre caractère (Option+X ≠ X).
+**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** `Ctrl` et `Cmd`. `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement. **Garanti sans exception depuis la 1.2.0** : chaque raccourci avec `Cmd` ou `Ctrl` produit exactement l'effet de la touche seule (`Cmd+A` = `A`, `Ctrl+Shift+Z` = `Shift+Z` = `Z`…). Le menu d'application par défaut d'Electron, actif même barre masquée et sous Linux, interceptait auparavant `Cmd/Ctrl+R` (rechargement de l'app), `+M` (réduction de la fenêtre), `+Z/X/C/A` (édition) et `+0` (zoom) : le processus principal les capte désormais (`before-input-event`, `FORWARDED_SHORTCUTS`, `main.js`) et les renvoie au renderer comme la touche seule (événement `shortcut`), traitée par le même gestionnaire `onKey`. Exception voulue : quand un **champ texte** a le focus (renommage, préfixe), ces combinaisons restent des raccourcis d'édition (tout sélectionner, copier, coller, annuler la saisie) ; le renderer signale ce focus au main (`ui:textEditing`). `Cmd/Ctrl+Q`, `+W` et `+H` restent au menu (quitter, fermer, masquer). Seul `Shift` a un sens propre (étendre la sélection avec ↑ / ↓). `Option`/`Alt` n'est pas couvert : sur macOS, Option+lettre produit un autre caractère (Option+X ≠ X).
 
 **Focus après un réglage de la barre (résolu le 2026-10-17)** : après un changement de **Sort**, **Subfolders** ou **Maximize**, le contrôle rend le focus à la grille (`blur()`), pour que les flèches naviguent aussitôt dans les vignettes au lieu d'agir sur le contrôle. *(Auparavant, le focus restait sur le `<select>`/la case et les flèches étaient détournées jusqu'à un clic sur la grille.)*
 
@@ -261,6 +263,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
   | Renommage (FN-13, FN-22) | le nom d'origine est rétabli |
   | Déplacement (FN-23) | retour dans le dossier source ; entre volumes, recopie avec progression et contrôle d'espace |
   | Copie (FN-23) | la copie part à la corbeille système (jamais de suppression définitive) |
+  | Rotation (FN-24) | rotation inverse (exacte, les rotations étant sans perte) |
 
 - Les opérations sont rejouées en ordre inverse ; un échec ponctuel (fichier supprimé entre-temps) n'arrête pas les autres et est signalé. Si l'emplacement d'origine est occupé, le fichier revient avec un suffixe ` (n)`.
 - Après annulation : la liste est rechargée et les fichiers restaurés sont **sélectionnés** ; message « Undone: <libellé> » (pile vide : « Nothing to undo »).
@@ -272,7 +275,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
 ### FN-21 Sélection multiple
 - État : `cursor` (fichier courant : visionneuse, Entrée, G/S), `sel` (ensemble de **chemins**) et `anchor` (origine des plages) (`renderer/renderer.js`).
 - **Clic** : sélectionne ce seul fichier, **sans l'ouvrir**. **Double-clic** : ouvre (FN-08, FN-11).
-- **Cmd/Ctrl + clic** : ajoute ou retire le fichier. **Shift + clic** et **Shift + flèches** : plage depuis l'ancre. **A** (ou Cmd/Ctrl+A) : tout sélectionner. **Échap** : réduit au fichier courant. Les flèches seules réduisent la sélection au fichier atteint.
+- **Cmd/Ctrl + clic** : ajoute ou retire le fichier. **Shift + clic** et **Shift + ↑ / ↓** : plage depuis l'ancre. **A** (ou Cmd/Ctrl+A) : tout sélectionner. **Échap** : réduit au fichier courant. Les flèches seules réduisent la sélection au fichier atteint.
 - Rendu : bordure bleue sur les fichiers sélectionnés ; contour blanc sur le curseur quand plusieurs fichiers sont sélectionnés ou qu'il est hors sélection. Compteur : « 42 photos · 5 selected ».
 - La sélection survit au re-tri, au changement de types et à l'annulation (fichiers toujours listés) ; un nouveau dossier ou un changement de mode repart du premier fichier.
 - En visionneuse, la sélection est ignorée : les actions portent sur la photo affichée.
@@ -292,6 +295,18 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
 - **Overlay de progression** (nom, n/N, octets, bouton Cancel ; Échap annule) affiché seulement quand des octets sont copiés. Une annulation abandonne le fichier en cours (source intacte, `.part` supprimé) ; les fichiers déjà traités le restent.
 - Tout le lot (même partiel) est **une** entrée d'annulation. Après un déplacement, la liste est rechargée (les fichiers la quittent) ; après une copie, seulement si la destination est sous le dossier courant.
 - Note : annuler une copie sur un volume externe l'envoie à la corbeille **de ce volume**, qui garde la place occupée jusqu'au vidage de la corbeille.
+
+### FN-24 Rotation des photos (← / →)
+- **←** tourne de 90° dans le sens anti-horaire, **→** dans le sens horaire. En grille : toute la sélection (FN-21) ; en visionneuse : la photo affichée. En mode **Videos**, ← / → ne font rien. **↑ / ↓** gardent la navigation.
+- La rotation est **enregistrée dans le fichier**, sans perte (`lib/rotate.js`, `rotateFile`, IPC `file:rotate`) :
+  - **JPEG** : seule l'étiquette EXIF *Orientation* est réécrite (ou ajoutée), donc instantané, sans réencodage, et toutes les autres métadonnées (date de prise de vue, GPS…) sont conservées. Chromium, comme les visionneuses usuelles, affiche l'image selon cette étiquette ;
+  - **PNG, BMP** : ffmpeg fait tourner les pixels, sans perte ;
+  - **WebP** : ffmpeg fait tourner les pixels et réécrit en **WebP sans perte** (un WebP avec perte peut donc grossir ; la première conversion en RGBA est le seul arrondi, imperceptible) ;
+  - **GIF, AVIF** : non pris en charge (message « rotation not supported »).
+- Écriture atomique (fichier temporaire caché puis renommage) ; la **date de modification est conservée**, pour que le tri par date ne bouge pas.
+- Un lot est **une** entrée d'annulation (FN-20) ; Z rétablit l'orientation d'origine. Maintenir une flèche enchaîne les rotations dans l'ordre (`rotateChain`).
+- Les vignettes et la visionneuse se rafraîchissent aussitôt : un numéro de révision est ajouté à l'URL `file://` du fichier tourné (`photoSrc`, `bumpRevs`), sinon Chromium réafficherait l'image en cache.
+- Message « Rotated <nom> right · Z to undo » (ou « Rotated N files left… »).
 
 ## 15. Comportements non couverts par le code
 

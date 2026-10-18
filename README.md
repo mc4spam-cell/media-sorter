@@ -18,9 +18,10 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 ### Keyboard (both modes)
 | Key | Action |
 |-----|--------|
-| ← → (also ↑ ↓) | previous / next |
+| ↑ ↓ | previous / next |
+| ← → | rotate the photo 90° left / right (the whole selection in the grid) |
 | **Enter** | open fullscreen (photos) / play in system player (videos) |
-| **Shift** + ← → | extend the selection |
+| **Shift** + ↑ ↓ | extend the selection |
 | **A** | select all |
 | **Esc** | leave fullscreen / keep only the current file selected |
 | **X** | send the selection to the trash |
@@ -33,7 +34,9 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 
 **Cmd** (macOS) or **Ctrl** (Linux) + any of these keys does exactly the same as the key alone (Cmd+Z = Z, Ctrl+A = A…), except inside a text field, where they keep their usual editing meaning.
 
-In the fullscreen viewer, X/R/M/C act on the displayed photo only.
+In the fullscreen viewer, X/R/M/C and ←/→ act on the displayed photo only. In Videos mode, ←/→ do nothing.
+
+**Rotation** is saved into the file and is lossless: JPEGs get their EXIF orientation updated (instant, all other metadata kept), PNG/BMP/WebP pixels are rotated losslessly (a lossy WebP is rewritten as lossless WebP, which can make it larger). The file's modification date is kept, and Z undoes it. GIF and AVIF can't be rotated.
 
 `G`/`S` launch the editor via `open -a` on macOS and the `gimp`/`shotcut` binary on Linux. If the editor isn't installed, a toast says so.
 

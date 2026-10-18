@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
   peekUndo: () => ipcRenderer.invoke('undo:peek'),
   rename: (oldPath, newName) => ipcRenderer.invoke('file:rename', oldPath, newName),
   renameBatch: (paths, prefix) => ipcRenderer.invoke('file:renameBatch', paths, prefix),
+  rotate: (paths, dir) => ipcRenderer.invoke('file:rotate', paths, dir),
   // Move / copy into a folder (mode 'move' | 'copy'), with pushed progress.
   transfer: (paths, destDir, mode) => ipcRenderer.invoke('file:transfer', paths, destDir, mode),
   cancelTransfer: () => ipcRenderer.invoke('file:transferCancel'),

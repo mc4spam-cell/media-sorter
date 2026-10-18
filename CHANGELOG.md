@@ -16,7 +16,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) and the
   app quits or relaunches (crash recovery). Read-only folders fall back to a
   direct, non-undoable trash.
 - **Multi-selection.** Cmd/Ctrl-click toggles a file, Shift-click and
-  Shift+arrows select a range, A selects all, Esc keeps only the
+  Shift+↑/↓ select a range, A selects all, Esc keeps only the
   current file. X trashes the whole selection (one confirmation, one undo).
   The selection survives re-sorting and type filters.
 - **Batch rename by prefix.** R with several files selected adds a prefix to
@@ -26,7 +26,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) and the
   after checking free space (plus a safety margin), and keep the file's
   modification date. Name clashes get " (n)".
 
+- **Rotate photos 90° with ← / →** (counter-clockwise / clockwise), in the
+  viewer or on the whole grid selection, saved into the file and lossless:
+  JPEGs get their EXIF orientation updated (instant, metadata kept), PNG/BMP
+  pixels are rotated losslessly, WebP is rewritten as lossless WebP. The
+  modification date is kept and Z undoes it. GIF and AVIF are not supported.
+
 ### Changed
+- **↑ / ↓ navigate; ← / → now rotate** the photo (they used to navigate).
 - **Click selects, double-click opens** a thumbnail (photo viewer or video
   player). Enter still opens the current file.
 - In the fullscreen viewer, X/R/M/C act on the displayed photo only.

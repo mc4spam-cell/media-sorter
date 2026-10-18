@@ -39,6 +39,7 @@ Il n'y a **ni framework front, ni bundler, ni base de données**. Le renderer es
 | `main.js` | Processus principal (~800 lignes) |
 | `lib/fileops.js` | Helpers fichiers sans dépendance Electron : `uniqueTarget`, `sameVolume`, `diskSpace` / `hasRoomFor`, `copyWithProgress`, `moveFile` (depuis la 1.2.0) |
 | `lib/undo.js` | Pile d'annulation journalisée et staging de la corbeille (depuis la 1.2.0) |
+| `lib/rotate.js` | Rotation de 90° sans perte : orientation EXIF des JPEG, pixels via ffmpeg pour PNG/BMP/WebP (depuis la 1.2.0) |
 | `preload.js` | Pont `window.api` (~35 lignes) |
 | `renderer/index.html` | Interface, CSP, modales |
 | `renderer/renderer.js` | Logique d'interface (~1300 lignes) |
@@ -64,6 +65,7 @@ Toutes les communications sont des `invoke` (requête/réponse), sauf les évén
 | `file:rename` | R → M | `oldPath`, `newName` | nouveau chemin ; une entrée d'annulation | `main.js` | `rename(oldPath, newName)` |
 | `file:renameBatch` | R → M | `paths[]`, `prefix` | `{renamed: [{from, to}], errors}` ; une entrée | `main.js` | `renameBatch(paths, prefix)` |
 | `file:transfer` | R → M | `paths[]`, `destDir`, `'move'`/`'copy'` | `{done: [{from, to}], skipped, errors, cancelled}` ; une entrée | `main.js` | `transfer(paths, destDir, mode)` |
+| `file:rotate` | R → M | `paths[]`, `'cw'`/`'ccw'` | `{rotated: [path], errors}` ; une entrée | `main.js`, `lib/rotate.js` | `rotate(paths, dir)` |
 | `file:transferCancel` | R → M | — | — (interrompt la copie en cours) | `main.js` | `cancelTransfer()` |
 | `transfer:progress` | M → R (événement) | `{name, fileIndex, fileCount, bytesDone, bytesTotal}` | — | `main.js` | `onTransferProgress(cb)` |
 | `transfer:end` | M → R (événement) | — | — | `main.js` | `onTransferEnd(cb)` |
@@ -117,7 +119,7 @@ Détaillée dans [features.md, FN-07](features.md#5-vignettes-grille) et [config
 ### 4.6 Pile d'annulation et transferts (1.2.0)
 
 - `lib/undo.js` (`createUndoStack`) possède la pile (10 entrées) ; toutes ses opérations (corbeille, enregistrement, annulation, purge) sont **sérialisées** par une chaîne de promesses, et chaque changement réécrit `undo-journal.json`. Pour la corbeille, l'intention est journalisée **avant** de déplacer les fichiers : après un crash, la purge sait où est chaque fichier en staging. Le comportement fonctionnel est décrit en [features.md, FN-20](features.md#fn-20-annulation-z).
-- Les types d'opération (`trash`, `rename`, `move`, `copy`) ont chacun un gestionnaire d'annulation (`UNDO`) ; un nouveau type s'y branche sans toucher au reste.
+- Les types d'opération (`trash`, `rename`, `move`, `copy`, `rotate`) ont chacun un gestionnaire d'annulation (`UNDO`) ; un nouveau type s'y branche sans toucher au reste.
 - `beginTransfer` (`main.js`) encadre toute copie d'octets : un seul transfert à la fois, `AbortController` pour Cancel, progression globale poussée au renderer (au plus toutes les 100 ms, `PROGRESS_INTERVAL_MS`). Il sert à `file:transfer` et à l'annulation d'un déplacement entre volumes (passé à `createUndoStack`).
 - `lib/` n'a aucune dépendance Electron : ses modules s'exercent avec Node seul. Le dossier doit rester dans `build.files` (`package.json`).
 
@@ -149,6 +151,7 @@ Le fichier est enveloppé dans une IIFE protégée contre une double évaluation
 | Annulation | `undoLast` |
 | Renommage | `openRename`, `confirmRename` |
 | Renommage en masse | `openPrefix`, `updatePrefixPreview`, `confirmPrefix` |
+| Rotation | `photoSrc`, `bumpRevs`, `rotateTargets`, `doRotate` |
 | Déplacement / copie | `transferTo`, overlay de progression |
 | Onglets | `setKind` |
 | Ouverture externe | `openPath` |
@@ -236,7 +239,7 @@ Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement
 | `nodeIntegration` | `main.js` | désactivé |
 | Sandbox du renderer | **`sandbox: true` explicite** | Déclaré dans les `webPreferences` (`main.js`, ajouté le 2026-10-17) au lieu de dépendre du défaut d'Electron, pour verrouiller la posture à travers les futures montées de version. Le preload n'utilise que `contextBridge`/`ipcRenderer`, compatibles sandbox (`preload.js`). |
 | Lancement sans shell | `spawn(cmd, args)` dans `main.js` | Pas d'interpolation de chaîne dans un shell |
-| Validation des chemins | partielle (type de cible) | `file:trash`, `file:rename`, `file:renameBatch`, `file:transfer`, `file:open`, `file:openWith` valident désormais que la cible est un **fichier régulier existant** (`assertRegularFile`) avant d'agir — durcissement défensif ajouté le 2026-10-17. Il n'y a pas (volontairement) de restriction au dossier choisi : le flux « Ouvrir avec » et le multi-dossiers l'exigent. Le renderer reste local et de confiance (CSP `script-src 'self'`, aucune entrée distante), donc le risque restait théorique. |
+| Validation des chemins | partielle (type de cible) | `file:trash`, `file:rename`, `file:renameBatch`, `file:rotate`, `file:transfer`, `file:open`, `file:openWith` valident désormais que la cible est un **fichier régulier existant** (`assertRegularFile`) avant d'agir — durcissement défensif ajouté le 2026-10-17. Il n'y a pas (volontairement) de restriction au dossier choisi : le flux « Ouvrir avec » et le multi-dossiers l'exigent. Le renderer reste local et de confiance (CSP `script-src 'self'`, aucune entrée distante), donc le risque restait théorique. |
 | Renommage | `main.js` | Les séparateurs `/` et `\` sont remplacés par `_` |
 
 ## 10. Contraintes et particularités
