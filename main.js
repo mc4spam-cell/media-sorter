@@ -22,7 +22,7 @@ if (ffmpegPath && ffmpegPath.includes('app.asar')) {
   ffmpegPath = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
 }
 
-// trash@7 is ESM-only; load it lazily from CommonJS.
+// trash (v8+) is ESM-only; load it lazily from CommonJS.
 let trashFn = null;
 async function getTrash() {
   if (!trashFn) {
@@ -208,9 +208,15 @@ ipcMain.handle('app:getPendingFile', () => {
 });
 
 // ---------- IPC: folder picker ----------
-ipcMain.handle('dialog:openFolder', async () => {
-  const res = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+// Since Electron 43 a dialog without defaultPath opens in Downloads (macOS used
+// to reopen the last folder). Start from the last folder picked this session,
+// else the folder being browsed (startDir, from the renderer).
+let lastPickedDir = null;
+ipcMain.handle('dialog:openFolder', async (_e, startDir) => {
+  const defaultPath = lastPickedDir || (typeof startDir === 'string' && startDir ? startDir : undefined);
+  const res = await dialog.showOpenDialog({ properties: ['openDirectory'], defaultPath });
   if (res.canceled || res.filePaths.length === 0) return null;
+  lastPickedDir = res.filePaths[0];
   return res.filePaths[0];
 });
 

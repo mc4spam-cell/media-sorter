@@ -21,19 +21,19 @@ info "Installing system prerequisites (git, curl, FUSE for AppImage)…"
 sudo apt-get update -y
 sudo apt-get install -y git curl ca-certificates libfuse2 || sudo apt-get install -y git curl ca-certificates libfuse2t64 || true
 
-# ---- 2. Node.js (need >= 18) ------------------------------------------------
+# ---- 2. Node.js (need >= 22.12: electron 44 / @electron/rebuild) -----------
 need_node=0
 if command -v node >/dev/null 2>&1; then
-  major="$(node -p 'process.versions.node.split(".")[0]')"
-  [ "$major" -ge 18 ] || { warn "Node $(node -v) is too old (need >= 18)."; need_node=1; }
+  node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)' \
+    || { warn "Node $(node -v) is too old (need >= 22.12)."; need_node=1; }
 else
   warn "Node.js not found."
   need_node=1
 fi
 
 if [ "$need_node" -eq 1 ]; then
-  info "Installing Node.js 20.x via NodeSource…"
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  info "Installing Node.js 22.x via NodeSource…"
+  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
   sudo apt-get install -y nodejs
 fi
 info "Using Node $(node -v) / npm $(npm -v)"

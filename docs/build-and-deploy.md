@@ -8,7 +8,7 @@
 
 | Élément | Exigence | Source |
 |---|---|---|
-| Node.js | ≥ 18 (le script Ubuntu installe Node 20.x si absent ou trop ancien) | `install-ubuntu.sh` |
+| Node.js | ≥ 22.12 depuis Electron 44 (le script Ubuntu installe Node 22.x si absent ou trop ancien) ; 1.2.0 et antérieures : ≥ 18 | `package.json` (`engines`), `install-ubuntu.sh` |
 | npm | fourni avec Node | — |
 | Build macOS (`.dmg`) | Être sous macOS | convention electron-builder, non vérifiée dans le dépôt |
 | Build Linux (`AppImage`, `.deb`) | Être **sous Linux** | `README.md` : le binaire ffmpeg est téléchargé pour la plateforme de build |
@@ -19,7 +19,7 @@
 
 | Commande | Effet | Sortie |
 |---|---|---|
-| `npm install` | Installe les dépendances (dev incluses) et télécharge le binaire ffmpeg pour la plateforme courante (`ffmpeg-static`, script `install`) | `node_modules/` |
+| `npm install` | Installe les dépendances (dev incluses) et télécharge le binaire ffmpeg pour la plateforme courante (`ffmpeg-static`, script `install`). Depuis Electron 42, le binaire Electron n'est plus téléchargé ici mais au premier `npm start` | `node_modules/` |
 | `npm start` | `electron .` : lance l'application en mode développement | — |
 | `npm run dist:linux` | `electron-builder --linux AppImage deb` | `dist/*.AppImage`, `dist/*.deb` |
 | `npm run dist:mac` | `electron-builder --mac dmg` | `dist/*.dmg`, `dist/*.dmg.blockmap`, `dist/latest-mac.yml`, `dist/mac/` |
@@ -48,7 +48,7 @@ bash install-ubuntu.sh
 |---|---|---|
 | 1 | Se place dans le dossier du script et vérifie la présence de `package.json` | 15-17 |
 | 2 | Installe `git`, `curl`, `ca-certificates`, `libfuse2` (repli sur `libfuse2t64`) | 21-22 |
-| 3 | Vérifie Node ≥ 18 ; sinon installe Node 20.x via NodeSource puis `nodejs` | 26-37 |
+| 3 | Vérifie Node ≥ 22.12 ; sinon installe Node 22.x via NodeSource puis `nodejs` | 24-39 |
 | 4 | **Demande** d'installer GIMP et Shotcut (réponse par défaut : non) | 42-46 |
 | 5 | `npm install` puis `npm run dist:linux` | 49-53 |
 | 6 | Rend l'AppImage exécutable | 59 |
@@ -86,6 +86,8 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
 ```
 
 (`README.md`.) La variable désactive la recherche automatique d'un certificat de signature. **Aucune signature ni notarisation n'est configurée** dans `package.json` : pas d'identité, pas de `hardenedRuntime`, pas de `notarize`.
+
+Avec electron-builder 26 (montée de version [Unreleased]), le build affiche « skipped macOS application code signing » : le bundle n'est pas scellé, mais les exécutables Mach-O d'Electron restent signés ad hoc par l'éditeur de liens (`codesign -dv` : `flags=adhoc,linker-signed`), ce qui suffit pour lancer l'app arm64 sur Apple Silicon. Vérifié sur un build `--arm64` croisé depuis un Mac Intel (2026-10-19), non lancé sur Apple Silicon. Le `.dmg` exige **macOS 13** ou plus récent.
 
 ### 4.2 Installation et Gatekeeper
 
@@ -129,7 +131,7 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 |---|---|---|
 | `CFBundleIdentifier` | `com.mc.mediasorter` | issu de `appId` |
 | `CFBundleShortVersionString` / `CFBundleVersion` | `1.1.0` | |
-| `LSMinimumSystemVersion` | `10.15` | valeur par défaut Electron, non déclarée dans `package.json` |
+| `LSMinimumSystemVersion` | `10.15` (1.2.0, Electron 31) ; **`13.0`** avec Electron 44 | valeur par défaut Electron, non déclarée dans `package.json` |
 | `CFBundleIconFile` | `electron.icns` | **icône par défaut d'Electron** : aucune icône propre n'est configurée (`build/icon.icns` absent). Choix assumé pour l'instant (voir ci-dessous). |
 | `CFBundleDocumentTypes` | Image, rôle Viewer, extensions jpg/jpeg/png/webp/gif/bmp/avif | issu de `build.fileAssociations` (tiff/tif retirés le 2026-10-17 ; le DMG 1.1.0 publié, antérieur, les contient encore) |
 | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSBluetoothAlwaysUsageDescription` | **supprimées** | retirées par le hook `afterPack` (le 2026-10-17) ; l'app n'utilise ni caméra, ni micro, ni Bluetooth |

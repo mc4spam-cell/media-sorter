@@ -10,13 +10,16 @@
   },
   "author": "mc <273350363+mc4spam-cell@users.noreply.github.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "^44.9.0",
+    "electron-builder": "^26.17.0"
   },
   "dependencies": {
     "ffmpeg-static": "^5.2.0",
-    "trash": "^7.2.0"
+    "trash": "^9.0.0"
   },
   "build": {
     "appId": "com.mc.mediasorter",
