@@ -69,17 +69,18 @@ Click **Open folder…**, then switch between the **Photos** and **Videos** tabs
 
 Prebuilt packages for each release are on the
 [GitHub Releases page](https://github.com/mc4spam-cell/media-sorter/releases/latest).
-The current **v1.1.0** release ships three:
+The current **v1.2.1** release ships the macOS Intel build; the Apple Silicon
+and Ubuntu packages are still those of v1.1.0 (newer builds to follow):
 
-| Platform | Asset |
+| Platform | Latest prebuilt asset |
 |----------|-------|
-| macOS — Apple Silicon | `Media Sorter-1.1.0-arm64.dmg` |
-| macOS — Intel | `Media Sorter-1.1.0-intel.dmg` |
-| Ubuntu / Debian | `media-sorter_1.1.0_amd64.deb` |
+| macOS — Intel | `Media.Sorter-1.2.1-x64.dmg` ([v1.2.1](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.1)) |
+| macOS — Apple Silicon | `Media.Sorter-1.1.0-arm64.dmg` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
+| Ubuntu / Debian | `media-sorter_1.1.0_amd64.deb` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
 
 ### macOS
 1. Download the `.dmg` for your architecture from the release page above
-   (Apple Silicon = `arm64`, Intel = `intel`), **or** build it yourself:
+   (Apple Silicon = `arm64`, Intel = `x64`, `intel` up to v1.1.0), **or** build it yourself:
    ```bash
    npm install
    CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
