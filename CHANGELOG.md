@@ -4,6 +4,24 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [Unreleased]
+
+### Changed
+- **Dependencies upgraded:** Electron 31.7.7 → 44.9.0 (Chromium 152),
+  electron-builder 24.13.3 → 26.17.0, trash 7.2.0 → 9.0.0. The build
+  configuration (`asar: false`, `afterPack`, `files`, `fileAssociations`,
+  mac `artifactName`) is unchanged. The bundled `macos-trash` binary is now
+  universal, so the trash runs natively on Apple Silicon.
+- **macOS 13 (Ventura) or later is now required** (Electron 44; 1.2.x ran
+  on macOS 10.15+).
+- **Building needs Node.js 22.12 or later** (declared in `engines`);
+  `install-ubuntu.sh` now installs Node 22.x.
+- The folder picker (open folder, M / C destination) opens on the last
+  folder picked in the session, else on the folder being browsed. Since
+  Electron 43 it otherwise opened in Downloads.
+- `npm audit`: no remaining vulnerabilities in runtime dependencies; 8
+  moderate remain in electron-builder's download tooling (`sprintf-js` via
+  `@electron/get` → `global-agent` → `roarr`), with no upstream fix yet.
 ## [1.2.1] — 2026-10-19
 
 ### Added

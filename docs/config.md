@@ -182,12 +182,16 @@ Extrait des paramètres pertinents pour la configuration :
 | `build.appId` | `com.mc.mediasorter` | `package.json` |
 | `build.productName` | `Media Sorter` | `package.json` |
 | `build.asar` | `false` | `package.json` |
+| `build.afterPack` | `./build/afterPack.js` (nettoyage `Info.plist`, macOS) | `package.json` |
 | `build.files` | `main.js`, `preload.js`, `lib/**/*`, `renderer/**/*`, `package.json` | `package.json` |
+| `build.fileAssociations` | Image (jpg, jpeg, png, webp, gif, bmp, avif), rôle Viewer | `package.json` |
 | `build.linux.target` | `AppImage`, `deb` | `package.json` |
 | `build.linux.category` | `Graphics` | `package.json` |
 | `build.mac.target` | `dmg` | `package.json` |
 | `build.mac.category` | `public.app-category.photography` | `package.json` |
 | `build.mac.artifactName` | `${productName}-${version}-${arch}.${ext}` | `package.json` |
+
+Outil : electron-builder **26** (Electron 44) depuis la montée de version [Unreleased] ; la configuration ci-dessus est inchangée par rapport à electron-builder 24. `asar: false` reste voulu (electron-builder 26 affiche l'avertissement « asar usage is disabled », sans effet) : `ffmpeg` et `macos-trash` doivent rester des exécutables directement lancés. `engines.node` (`>=22.12.0`) est déclaré dans `package.json`.
 
 Détails de packaging et de signature : voir [build-and-deploy.md](build-and-deploy.md).
 

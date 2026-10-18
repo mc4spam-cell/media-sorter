@@ -13,7 +13,7 @@ function toFileURL(p) {
 
 contextBridge.exposeInMainWorld('api', {
   toFileURL,
-  openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
+  openFolder: (startDir) => ipcRenderer.invoke('dialog:openFolder', startDir),
   list: (folder, opts) => ipcRenderer.invoke('fs:list', folder, opts),
   trash: (paths) => ipcRenderer.invoke('file:trash', paths),
   undo: () => ipcRenderer.invoke('undo:pop'),

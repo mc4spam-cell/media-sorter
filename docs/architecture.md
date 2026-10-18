@@ -223,12 +223,20 @@ renderer : getPendingFile() au démarrage ; onOpenFile() ensuite
 
 | Paquet | Spécification (`package.json`) | Version installée | Rôle |
 |---|---|---|---|
-| `electron` | `^31.0.0` (dev) | 31.7.7 | Runtime desktop |
-| `electron-builder` | `^24.13.3` (dev) | 24.13.3 | Génération des paquets |
+| `electron` | `^44.9.0` (dev) | 44.9.0 | Runtime desktop (Chromium 152) |
+| `electron-builder` | `^26.17.0` (dev) | 26.17.0 | Génération des paquets |
 | `ffmpeg-static` | `^5.2.0` | 5.3.0 | Binaire ffmpeg embarqué (chemin résolu dans `main.js`) |
-| `trash` | `^7.2.0` | 7.2.0 | Mise à la corbeille, ESM chargé dynamiquement (`main.js`) |
+| `trash` | `^9.0.0` | 9.0.0 | Mise à la corbeille, ESM chargé dynamiquement (`main.js`) |
 
-Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement (commentaire `main.js`).
+Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement (commentaire `main.js`). Son export par défaut accepte un chemin ou un tableau (`lib/undo.js` lui passe des tableaux). Depuis `trash` 8.1, le binaire `macos-trash` est universel (x86_64 + arm64) : il tourne nativement sur Apple Silicon.
+
+**Montée de version (non publiée, voir `CHANGELOG.md` [Unreleased])** : la 1.2.0 a été livrée sur Electron 31.7.7 / electron-builder 24.13.3 / trash 7.2.0. Le passage à Electron 44 / electron-builder 26 / trash 9 implique :
+
+- **Node ≥ 22.12** pour installer et construire (`engines` du paquet `electron` et de `@electron/rebuild`) ; `package.json` le déclare dans `engines`, `install-ubuntu.sh` installe Node 22.x.
+- **macOS 13 minimum** (Electron 44 ; 31 acceptait 10.15). `LSMinimumSystemVersion` du bundle vaut `13.0`.
+- Le paquet `electron` ne télécharge plus son binaire au `postinstall` (Electron 42) : il le fait au premier lancement (`npx electron .` / `npm start`), ou à l'empaquetage.
+- Les boîtes de dialogue sans `defaultPath` s'ouvrent dans Téléchargements (Electron 43). `dialog:openFolder` (`main.js`) part donc du dernier dossier choisi dans la session, sinon du dossier parcouru (passé par le renderer).
+- Linux : Wayland natif par défaut sur une session Wayland (Electron 38), GTK 4 par défaut sous GNOME (Electron 36).
 
 ## 9. Sécurité et isolation
 

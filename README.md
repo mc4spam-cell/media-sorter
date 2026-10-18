@@ -103,7 +103,7 @@ git clone https://github.com/mc4spam-cell/media-sorter.git
 cd media-sorter
 bash install-ubuntu.sh
 ```
-It installs prerequisites (Node ≥ 18, FUSE), optionally GIMP/Shotcut, builds, and offers to install the `.deb`.
+It installs prerequisites (Node ≥ 22.12, FUSE), optionally GIMP/Shotcut, builds, and offers to install the `.deb`.
 
 **Manual:**
 ```bash

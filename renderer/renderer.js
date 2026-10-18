@@ -151,7 +151,7 @@ async function pickFolder() {
     if (!api || typeof api.openFolder !== 'function') {
       throw new Error('preload bridge missing (window.api undefined)');
     }
-    const folder = await api.openFolder();
+    const folder = await api.openFolder(state.folder);
     if (!folder) return;
     state.folder = folder;
     $('folderPath').textContent = folder;
@@ -953,7 +953,7 @@ async function transferTo(mode) {
   if (!items.length || transferBusy) return;
   let dest;
   try {
-    dest = await api.openFolder();
+    dest = await api.openFolder(state.folder);
   } catch (e) {
     toast('Cannot pick a folder: ' + errMsg(e));
     return;
