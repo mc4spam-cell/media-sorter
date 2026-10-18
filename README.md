@@ -21,15 +21,17 @@ Built and tested on macOS, targets **Ubuntu Linux** for daily use.
 | ← → (also ↑ ↓) | previous / next |
 | **Enter** | open fullscreen (photos) / play in system player (videos) |
 | **Shift** + ← → | extend the selection |
-| **Cmd/Ctrl + A** | select all |
+| **A** | select all |
 | **Esc** | leave fullscreen / keep only the current file selected |
 | **X** | send the selection to the trash |
-| **Z** (or **Cmd/Ctrl + Z**) | undo the last action (up to 10) |
+| **Z** | undo the last action (up to 10) |
 | **R** | rename the current file; with several selected, add a prefix to all of them |
 | **M** / **C** | move / copy the selection to a folder |
 | **G** | open the current **photo** in GIMP |
 | **S** | open the current **video** in Shotcut |
 | **0** | reset zoom to fit (fullscreen photo) |
+
+**Cmd** (macOS) or **Ctrl** (Linux) + any of these keys does exactly the same as the key alone (Cmd+Z = Z, Ctrl+A = A…), except inside a text field, where they keep their usual editing meaning.
 
 In the fullscreen viewer, X/R/M/C act on the displayed photo only.
 
@@ -48,7 +50,7 @@ In the fullscreen viewer, X/R/M/C act on the displayed photo only.
 
 ### Selection, undo, move & copy
 - **Click** selects a thumbnail, **double-click** opens it. **Cmd/Ctrl-click** adds or removes a file, **Shift-click** selects a range.
-- **Undo** (Z / Cmd+Z / Ctrl+Z) reverts the last 10 actions — trash, rename, prefix, move, copy — each burst at once. A trashed file is first parked in a hidden `.media-sorter-staging` folder next to it (instant even for huge videos) and reaches the **system trash** (Finder Trash on macOS, Trash on Ubuntu) when it leaves the undo history or when the app quits; a folder that can't host it (read-only) sends it straight to the trash, not undoable.
+- **Undo** (Z) reverts the last 10 actions — trash, rename, prefix, move, copy — each burst at once. A trashed file is first parked in a hidden `.media-sorter-staging` folder next to it (instant even for huge videos) and reaches the **system trash** (Finder Trash on macOS, Trash on Ubuntu) when it leaves the undo history or when the app quits; a folder that can't host it (read-only) sends it straight to the trash, not undoable.
 - **Move / copy** (M / C): pick a folder; moves on the same disk are instant, copies and moves to another disk show a progress bar with Cancel, after checking there's enough free space. Name clashes get a ` (n)` suffix.
 
 ## Run (development)

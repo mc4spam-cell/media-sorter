@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) and the
 ## [1.2.0] — 2026-10-18
 
 ### Added
-- **Undo (Z, Cmd+Z, Ctrl+Z).** The last 10 actions can be undone: trash,
+- **Undo (Z).** The last 10 actions can be undone: trash,
   rename, prefix rename, move and copy. A burst (5 files trashed, 30 files
   moved) is undone in one go, and the restored files are selected. A trashed
   file is first parked in a hidden `.media-sorter-staging` folder next to it
@@ -16,7 +16,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) and the
   app quits or relaunches (crash recovery). Read-only folders fall back to a
   direct, non-undoable trash.
 - **Multi-selection.** Cmd/Ctrl-click toggles a file, Shift-click and
-  Shift+arrows select a range, Cmd/Ctrl+A selects all, Esc keeps only the
+  Shift+arrows select a range, A selects all, Esc keeps only the
   current file. X trashes the whole selection (one confirmation, one undo).
   The selection survives re-sorting and type filters.
 - **Batch rename by prefix.** R with several files selected adds a prefix to
@@ -32,6 +32,13 @@ This project adheres to [Semantic Versioning](https://semver.org/) and the
 - In the fullscreen viewer, X/R/M/C act on the displayed photo only.
 - Error toasts no longer show Electron's "Error invoking remote method"
   prefix.
+
+### Fixed
+- **Cmd/Ctrl + a shortcut now always does what the key alone does.** The
+  default Electron menu (active even with the menu bar hidden, Linux
+  included) used to grab Cmd/Ctrl+R (reloaded the app), Cmd/Ctrl+M
+  (minimized the window), Cmd/Ctrl+Z/X/C/A and Cmd/Ctrl+0. Inside a text
+  field these combos keep their editing meaning.
 
 ## [1.1.0] — 2026-10-17
 

@@ -198,13 +198,13 @@ Comportement côté interface (`renderer/renderer.js`) :
 | **←** / **↑** | tous | Élément précédent (la sélection se réduit à lui) | `renderer/renderer.js` |
 | **→** / **↓** | tous | Élément suivant (idem) | `renderer/renderer.js` |
 | **Shift + flèches** | grille | Étendre la sélection en plage (FN-21) | `renderer/renderer.js` |
-| **Cmd+A** / **Ctrl+A** | grille | Tout sélectionner (FN-21) | `renderer/renderer.js` |
+| **A** | grille | Tout sélectionner (FN-21) | `renderer/renderer.js` |
 | **Entrée** | Photos | Ouvrir la visionneuse (sans effet si déjà ouverte) | `renderer/renderer.js` |
 | **Entrée** | Videos | Lancer dans le lecteur système | `renderer/renderer.js` |
 | **Échap** | tous | Fermer la visionneuse ; en grille, réduire une sélection multiple au fichier courant | `renderer/renderer.js` |
 | **0** | visionneuse | Réinitialiser le zoom | `renderer/renderer.js` |
 | **X** | tous | Mettre à la corbeille (FN-12) | `renderer/renderer.js` |
-| **Z**, **Cmd+Z**, **Ctrl+Z** | tous | Annuler la dernière action (FN-20) | `renderer/renderer.js` |
+| **Z** | tous | Annuler la dernière action (FN-20) | `renderer/renderer.js` |
 | **R** | tous | Renommer ; plusieurs fichiers : ajouter un préfixe (FN-22) | `renderer/renderer.js` |
 | **M** | tous | Déplacer vers un dossier (FN-23) | `renderer/renderer.js` |
 | **C** | tous | Copier vers un dossier (FN-23) | `renderer/renderer.js` |
@@ -221,7 +221,7 @@ Règles de garde (`renderer/renderer.js`) :
 - Si la fenêtre de **renommage** ou d'**ajout de préfixe** est ouverte, le gestionnaire global ne fait rien (le champ gère ses propres touches).
 - Si le focus est dans un champ `INPUT`, `SELECT` ou `TEXTAREA` (liste de tri, cases à cocher), les touches ne sont pas interceptées.
 
-**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement. Exceptions depuis la 1.2.0 : **Cmd/Ctrl+A** (tout sélectionner, alors que A seul ne fait rien), **Shift + flèches** (plage), et **Cmd/Ctrl+Shift+Z**, ignoré faute de « refaire ».
+**Validé (2026-10-17)** : les touches **ne vérifient pas les modificateurs** (`Ctrl`, `Cmd`, `Alt`, `Fn`). `Cmd+X`, `Ctrl+R`, etc. déclenchent donc la même action que la touche seule. **Comportement souhaité** : il rend les raccourcis robustes quand les affectations de `Ctrl`/`Cmd`/`Option`/`Fn` diffèrent (machines virtuelles, macOS vs Linux natif), où exiger une combinaison exacte échouerait selon l'environnement. **Garanti sans exception depuis la 1.2.0** : chaque raccourci avec `Cmd` ou `Ctrl` produit exactement l'effet de la touche seule (`Cmd+A` = `A`, `Ctrl+Shift+Z` = `Shift+Z` = `Z`…). Le menu d'application par défaut d'Electron, actif même barre masquée et sous Linux, interceptait auparavant `Cmd/Ctrl+R` (rechargement de l'app), `+M` (réduction de la fenêtre), `+Z/X/C/A` (édition) et `+0` (zoom) : le processus principal les capte désormais (`before-input-event`, `FORWARDED_SHORTCUTS`, `main.js`) et les renvoie au renderer comme la touche seule (événement `shortcut`), traitée par le même gestionnaire `onKey`. Exception voulue : quand un **champ texte** a le focus (renommage, préfixe), ces combinaisons restent des raccourcis d'édition (tout sélectionner, copier, coller, annuler la saisie) ; le renderer signale ce focus au main (`ui:textEditing`). `Cmd/Ctrl+Q`, `+W` et `+H` restent au menu (quitter, fermer, masquer). Seul `Shift` a un sens propre (étendre la sélection avec les flèches).
 
 **Focus après un réglage de la barre (résolu le 2026-10-17)** : après un changement de **Sort**, **Subfolders** ou **Maximize**, le contrôle rend le focus à la grille (`blur()`), pour que les flèches naviguent aussitôt dans les vignettes au lieu d'agir sur le contrôle. *(Auparavant, le focus restait sur le `<select>`/la case et les flèches étaient détournées jusqu'à un clic sur la grille.)*
 
@@ -251,7 +251,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
 
 ## 14. Annulation, sélection multiple et actions groupées (1.2.0)
 
-### FN-20 Annulation (Z, Cmd+Z, Ctrl+Z)
+### FN-20 Annulation (Z)
 - **Pile des 10 dernières actions**, tenue par le processus principal (`lib/undo.js`, `createUndoStack`) et journalisée dans `<userData>/undo-journal.json` (écriture atomique) à chaque changement. Pas de « refaire ».
 - Une entrée = une liste d'opérations typées ; une rafale (5 fichiers à la corbeille, 20 préfixes, 30 fichiers déplacés) est **une seule** entrée, annulée d'un coup :
 
@@ -272,7 +272,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
 ### FN-21 Sélection multiple
 - État : `cursor` (fichier courant : visionneuse, Entrée, G/S), `sel` (ensemble de **chemins**) et `anchor` (origine des plages) (`renderer/renderer.js`).
 - **Clic** : sélectionne ce seul fichier, **sans l'ouvrir**. **Double-clic** : ouvre (FN-08, FN-11).
-- **Cmd/Ctrl + clic** : ajoute ou retire le fichier. **Shift + clic** et **Shift + flèches** : plage depuis l'ancre. **Cmd/Ctrl + A** : tout sélectionner. **Échap** : réduit au fichier courant. Les flèches seules réduisent la sélection au fichier atteint.
+- **Cmd/Ctrl + clic** : ajoute ou retire le fichier. **Shift + clic** et **Shift + flèches** : plage depuis l'ancre. **A** (ou Cmd/Ctrl+A) : tout sélectionner. **Échap** : réduit au fichier courant. Les flèches seules réduisent la sélection au fichier atteint.
 - Rendu : bordure bleue sur les fichiers sélectionnés ; contour blanc sur le curseur quand plusieurs fichiers sont sélectionnés ou qu'il est hors sélection. Compteur : « 42 photos · 5 selected ».
 - La sélection survit au re-tri, au changement de types et à l'annulation (fichiers toujours listés) ; un nouveau dossier ou un changement de mode repart du premier fichier.
 - En visionneuse, la sélection est ignorée : les actions portent sur la photo affichée.

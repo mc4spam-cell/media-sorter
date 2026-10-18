@@ -1219,7 +1219,10 @@ renameInput.addEventListener('keydown', (e) => {
   else if (e.key === 'Escape') closeRename();
 });
 
-document.addEventListener('keydown', (e) => {
+// Shortcuts deliberately ignore Ctrl/Cmd/Alt: Cmd+X acts exactly like X, which
+// stays robust when modifier mappings differ (VMs, macOS vs Linux). See FN-17.
+// Only Shift matters (it extends the selection with the arrows).
+function onKey(e) {
   if (!transferModal.classList.contains('hidden')) {
     if (e.key === 'Escape') api.cancelTransfer();
     return; // copy in progress: swallow other keys
@@ -1240,23 +1243,17 @@ document.addEventListener('keydown', (e) => {
   if (isModalOpen()) return; // modal handles its own keys
   // Don't hijack keys while a form control (sort menu, checkboxes) is focused.
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
-  // Undo: plain Z, or Cmd+Z (macOS) / Ctrl+Z (Linux). No redo, so Shift+Cmd+Z
-  // is left alone.
-  if ((e.key === 'z' || e.key === 'Z') && !e.altKey) {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey) return;
-    e.preventDefault();
-    undoLast();
-    return;
-  }
-  // Select all: Cmd+A (macOS) / Ctrl+A (Linux), grid only.
-  if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
-    e.preventDefault();
-    if (!state.fullscreen) selectAll();
-    return;
-  }
-  // Other shortcuts deliberately ignore modifiers (Cmd+X acts like X): robust
-  // when Ctrl/Cmd/Option mappings differ (VMs, macOS vs Linux). See FN-17.
   switch (e.key) {
+    case 'z':
+    case 'Z':
+      e.preventDefault();
+      undoLast();
+      break;
+    case 'a':
+    case 'A':
+      e.preventDefault();
+      if (!state.fullscreen) selectAll(); // grid only
+      break;
     case 'ArrowRight':
     case 'ArrowDown':
       e.preventDefault();
@@ -1305,7 +1302,29 @@ document.addEventListener('keydown', (e) => {
       transferTo('copy');
       break;
   }
-});
+}
+document.addEventListener('keydown', onKey);
+
+// Ctrl/Cmd combos that main took away from the app menu arrive here as the bare
+// key, and go through the very same handler.
+api.onShortcut(({ key, shift }) =>
+  onKey({
+    key,
+    shiftKey: shift,
+    metaKey: false,
+    ctrlKey: false,
+    altKey: false,
+    target: document.activeElement || document.body,
+    preventDefault() {},
+  })
+);
+
+// Tell main when a text field has focus, so Ctrl/Cmd+A/C/V/Z keep editing it.
+function isTextField(el) {
+  return !!el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'));
+}
+document.addEventListener('focusin', (e) => api.setTextEditing(isTextField(e.target)));
+document.addEventListener('focusout', () => api.setTextEditing(false));
 
 // ---------- Init ----------
 loadPrefs();

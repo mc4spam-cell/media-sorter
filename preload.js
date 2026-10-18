@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('api', {
   cancelTransfer: () => ipcRenderer.invoke('file:transferCancel'),
   onTransferProgress: (cb) => ipcRenderer.on('transfer:progress', (_e, p) => cb(p)),
   onTransferEnd: (cb) => ipcRenderer.on('transfer:end', () => cb()),
+  // Ctrl/Cmd+key combos main intercepted from the app menu, delivered as the
+  // bare key; and whether a text field has focus (main then leaves combos alone).
+  onShortcut: (cb) => ipcRenderer.on('shortcut', (_e, s) => cb(s)),
+  setTextEditing: (on) => ipcRenderer.send('ui:textEditing', on),
   openExternal: (filePath) => ipcRenderer.invoke('file:open', filePath),
   openWith: (filePath, app) => ipcRenderer.invoke('file:openWith', filePath, app),
   videoFrames: (filePath, mtimeMs) => ipcRenderer.invoke('video:frames', filePath, mtimeMs),

@@ -67,10 +67,36 @@ function createWindow() {
     win.webContents.setVisualZoomLevelLimits(1, 1);
   });
 
+  // Shortcuts ignore Ctrl/Cmd: Cmd+X must act exactly like X (FN-17). But the
+  // default application menu (live even with the bar hidden, Linux included)
+  // grabs Cmd/Ctrl+R (reload), +M (minimize), +Z/X/C/A (edit roles) and +0
+  // (zoom) before the page sees them. Intercept those and forward them as the
+  // bare key — except while a text field has focus, where they stay editing
+  // shortcuts (select all, copy, paste, undo in the rename dialog).
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown' || !(input.control || input.meta) || textEditing) return;
+    const key = input.key.length === 1 ? input.key.toLowerCase() : input.key;
+    if (!FORWARDED_SHORTCUTS.has(key)) return;
+    e.preventDefault();
+    win.webContents.send('shortcut', { key: input.key, shift: input.shift });
+  });
+
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
   });
 }
+
+// Keys the app binds that a Ctrl/Cmd combo must not steal (see createWindow).
+// Cmd/Ctrl+Q, +W and +H are left to the menu (quit, close, hide).
+const FORWARDED_SHORTCUTS = new Set([
+  'a', 'c', 'g', 'm', 'r', 's', 'x', 'z', '0',
+  'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape',
+]);
+// True while a text field has focus in the renderer (reported over IPC).
+let textEditing = false;
+ipcMain.on('ui:textEditing', (_e, on) => {
+  textEditing = !!on;
+});
 
 // Some file managers launch the .desktop entry (Exec ... %U) with a file:// URI
 // rather than a plain path. Convert those back to a filesystem path.

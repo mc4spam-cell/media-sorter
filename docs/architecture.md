@@ -68,6 +68,8 @@ Toutes les communications sont des `invoke` (requête/réponse) sauf les événe
 | `transfer:progress` | M → R (événement) | `{name, fileIndex, fileCount, bytesDone, bytesTotal}` | — | `main.js` | `onTransferProgress(cb)` |
 | `transfer:end` | M → R (événement) | — | — | `main.js` | `onTransferEnd(cb)` |
 | `undo:pop` | R → M | — | `{label, restored, errors, cancelled}` ou `null` | `lib/undo.js` | `undo()` |
+| `shortcut` | M → R (événement) | `{key, shift}` : combinaison Cmd/Ctrl captée avant le menu, à traiter comme la touche seule | — | `main.js` | `onShortcut(cb)` |
+| `ui:textEditing` | R → M (`send`) | `true` si un champ texte a le focus | — | `main.js` | `setTextEditing(on)` |
 | `undo:peek` | R → M | — | libellé de la prochaine annulation ou `null` | `lib/undo.js` | `peekUndo()` |
 | `file:open` | R → M | `filePath` | `true` (erreur sinon) | `main.js` | `openExternal(filePath)` |
 | `file:openWith` | R → M | `filePath`, `appKey` (`gimp`/`shotcut`) | `true` (erreur sinon) | `main.js` | `openWith(filePath, app)` |
@@ -113,7 +115,7 @@ Détaillée dans [features.md, FN-07](features.md#5-vignettes-grille) et [config
 
 ### 4.6 Pile d'annulation et transferts (1.2.0)
 
-- `lib/undo.js` (`createUndoStack`) possède la pile (10 entrées) ; toutes ses opérations (corbeille, enregistrement, annulation, purge) sont **sérialisées** par une chaîne de promesses, et chaque changement réécrit `undo-journal.json`. Pour la corbeille, l'intention est journalisée **avant** de déplacer les fichiers : après un crash, la purge sait où est chaque fichier en staging. Le comportement fonctionnel est décrit en [features.md, FN-20](features.md#fn-20-annulation-z-cmdz-ctrlz).
+- `lib/undo.js` (`createUndoStack`) possède la pile (10 entrées) ; toutes ses opérations (corbeille, enregistrement, annulation, purge) sont **sérialisées** par une chaîne de promesses, et chaque changement réécrit `undo-journal.json`. Pour la corbeille, l'intention est journalisée **avant** de déplacer les fichiers : après un crash, la purge sait où est chaque fichier en staging. Le comportement fonctionnel est décrit en [features.md, FN-20](features.md#fn-20-annulation-z).
 - Les types d'opération (`trash`, `rename`, `move`, `copy`) ont chacun un gestionnaire d'annulation (`UNDO`) ; un nouveau type s'y branche sans toucher au reste.
 - `beginTransfer` (`main.js`) encadre toute copie d'octets : un seul transfert à la fois, `AbortController` pour Cancel, progression globale poussée au renderer (au plus toutes les 100 ms, `PROGRESS_INTERVAL_MS`). Il sert à `file:transfer` et à l'annulation d'un déplacement entre volumes (passé à `createUndoStack`).
 - `lib/` n'a aucune dépendance Electron : ses modules s'exercent avec Node seul. Le dossier doit rester dans `build.files` (`package.json`).

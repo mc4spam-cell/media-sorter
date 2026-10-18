@@ -30,9 +30,9 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
 - Tri par nom ou date de modification, ascendant ou descendant.
 - Scan récursif des sous-dossiers.
 - Activation/désactivation des extensions par mode.
-- Sélection multiple (Cmd/Ctrl-clic, Shift-clic, Cmd/Ctrl+A).
+- Sélection multiple (Cmd/Ctrl-clic, Shift-clic, A).
 - Mise à la corbeille, renommage (y compris ajout d'un préfixe en masse), déplacement et copie vers un dossier, ouverture dans GIMP / Shotcut.
-- Annulation des 10 dernières actions (Z, Cmd/Ctrl+Z).
+- Annulation des 10 dernières actions (Z ; Cmd/Ctrl+touche = touche seule).
 - Ouverture d'un fichier depuis le gestionnaire de fichiers (« Ouvrir avec »).
 - Mémorisation de certaines préférences entre les lancements.
 
@@ -58,7 +58,7 @@ Plateformes visées : **Ubuntu Linux** (usage quotidien, cible principale selon 
           │
           ├── Photo : Entrée ou double-clic → visionneuse plein écran (zoom, ← → pour passer à la suivante, Échap pour sortir)
           ├── Vidéo : Entrée ou double-clic → lecteur système
-          ├── Sélection multiple : Cmd/Ctrl-clic, Shift-clic, Shift+flèches, Cmd/Ctrl+A
+          ├── Sélection multiple : Cmd/Ctrl-clic, Shift-clic, Shift+flèches, A
           │
           ▼
  Décider pour le fichier courant ou la sélection :
