@@ -6,6 +6,8 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
+const { uniqueTarget } = require('./lib/fileops');
+const { createUndoStack, STAGING_DIR } = require('./lib/undo');
 // ffmpeg-static resolves to a bundled binary. If the app is ever packed into an
 // asar, the executable lives in the unpacked sibling dir — handle both.
 let ffmpegPath = require('ffmpeg-static');
@@ -22,6 +24,11 @@ async function getTrash() {
   }
   return trashFn;
 }
+
+// Created once the app is ready (needs the userData path). Primary instance only:
+// a second instance must never purge the running one's staged files.
+let undoStack = null;
+const PURGE_TIMEOUT_MS = 10000; // don't let a stuck trash call block quitting
 
 let mainWindow = null;
 // A file the app was asked to open (via the OS "Open with" / file association)
@@ -121,10 +128,30 @@ if (!gotLock) {
     }
   });
 
+  // Purge the undo staging before quitting: staged files go to the OS trash.
+  // Hold the quit once, run the purge (bounded), then quit for real.
+  let purgedForQuit = false;
+  app.on('before-quit', (e) => {
+    if (purgedForQuit || !undoStack) return;
+    e.preventDefault();
+    purgedForQuit = true;
+    const timeout = new Promise((r) => setTimeout(r, PURGE_TIMEOUT_MS));
+    Promise.race([undoStack.purge(), timeout])
+      .catch(() => {})
+      .finally(() => app.quit());
+  });
+
   app.whenReady().then(() => {
     // Initial launch file from the command line (Linux/Windows); macOS may have
     // already set pendingFile via the open-file event above.
     if (!pendingFile) pendingFile = fileArgFrom(process.argv);
+    undoStack = createUndoStack({
+      journalPath: path.join(app.getPath('userData'), 'undo-journal.json'),
+      trash: async (p) => (await getTrash())(p),
+    });
+    // Recover from a crash: whatever the last run left staged goes to the OS
+    // trash. Queued ahead of any trash/undo the user triggers.
+    undoStack.purge().catch(() => {});
     createWindow();
     // Best-effort, fire-and-forget: keep the frame cache from growing forever.
     pruneFrameCache().catch(() => {});
@@ -178,6 +205,8 @@ ipcMain.handle('fs:list', async (_e, folder, opts) => {
     for (const ent of entries) {
       // Skip dotfiles/dotfolders unless the user opted to show hidden entries.
       if (!showHidden && ent.name.startsWith('.')) continue;
+      // Never list the undo staging dir, even with hidden entries shown.
+      if (ent.name === STAGING_DIR) continue;
       const full = path.join(dir, ent.name);
 
       let isDir = ent.isDirectory();
@@ -258,13 +287,33 @@ async function assertRegularFile(filePath, label = 'File') {
   return st;
 }
 
-// ---------- IPC: trash ----------
-ipcMain.handle('file:trash', async (_e, filePath) => {
-  await assertRegularFile(filePath);
-  const trash = await getTrash();
-  await trash(filePath);
-  return true;
+// ---------- IPC: trash (undoable) ----------
+// Files are parked in their folder's staging dir as one undo entry (see
+// lib/undo.js). Returns { trashed, fallback, errors }: `fallback` lists files
+// that went straight to the OS trash (not undoable).
+ipcMain.handle('file:trash', async (_e, paths) => {
+  const valid = [];
+  const errors = [];
+  for (const p of [].concat(paths)) {
+    try {
+      await assertRegularFile(p);
+      valid.push(p);
+    } catch (e) {
+      errors.push({ path: p, message: e.message });
+    }
+  }
+  const res = valid.length
+    ? await undoStack.trashFiles(valid)
+    : { trashed: [], fallback: [], errors: [] };
+  res.errors.push(...errors);
+  return res;
 });
+
+// ---------- IPC: undo ----------
+// Undo the latest action. Returns { label, restored, errors }, or null when
+// there is nothing to undo.
+ipcMain.handle('undo:pop', () => undoStack.pop());
+ipcMain.handle('undo:peek', () => undoStack.peek());
 
 // ---------- IPC: rename ----------
 ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
@@ -287,17 +336,13 @@ ipcMain.handle('file:rename', async (_e, oldPath, newName) => {
       safe += oldExt;
     }
   }
-  let target = path.join(dir, safe);
-  if (target === oldPath) return oldPath;
+  if (path.join(dir, safe) === oldPath) return oldPath;
   // Avoid clobbering an existing file: append " (n)".
-  const base = safe.slice(0, safe.length - path.extname(safe).length);
-  const ext = path.extname(safe);
-  let i = 1;
-  while (fs.existsSync(target)) {
-    target = path.join(dir, `${base} (${i})${ext}`);
-    i++;
-  }
+  const target = uniqueTarget(dir, safe);
   await fsp.rename(oldPath, target);
+  await undoStack.record(`Rename ${path.basename(oldPath)}`, [
+    { type: 'rename', from: oldPath, to: target },
+  ]);
   return target;
 });
 

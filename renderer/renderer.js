@@ -580,14 +580,20 @@ function trashCurrent() {
 async function doTrash() {
   const item = state.items[state.selected];
   if (!item) return;
+  let res;
   try {
-    await api.trash(item.path);
+    res = await api.trash([item.path]);
   } catch (e) {
     toast('Trash failed: ' + e.message);
     return;
   }
+  if (!res.trashed.length) {
+    toast('Trash failed: ' + (res.errors[0] ? res.errors[0].message : 'unknown error'));
+    return;
+  }
   state.items.splice(state.selected, 1);
-  toast(`Trashed ${item.name}`);
+  // A file that couldn't be staged (read-only folder) went straight to the OS trash.
+  toast(res.fallback.length ? `Trashed ${item.name} (cannot be undone)` : `Trashed ${item.name} · Z to undo`);
   $('count').textContent = `${state.items.length} ${state.kind}`;
 
   if (!state.items.length) {
@@ -598,6 +604,35 @@ async function doTrash() {
   if (state.selected >= state.items.length) state.selected = state.items.length - 1;
   renderGrid();
   if (state.fullscreen) updateViewer();
+}
+
+// ---------- Undo (Z / Cmd+Z / Ctrl+Z) ----------
+// The stack lives in main; we reload the listing and land on the restored file.
+let undoBusy = false;
+async function undoLast() {
+  if (undoBusy) return;
+  undoBusy = true;
+  try {
+    const res = await api.undo();
+    if (!res) {
+      toast('Nothing to undo');
+      return;
+    }
+    await loadList();
+    const idx = state.items.findIndex((it) => res.restored.includes(it.path));
+    if (idx >= 0) setSelected(idx);
+    else if (!state.items.length) closeViewer();
+    else if (state.fullscreen) updateViewer();
+    toast(
+      res.errors.length
+        ? `Undone: ${res.label} · ${res.restored.length} restored, ${res.errors.length} failed (${res.errors[0]})`
+        : `Undone: ${res.label}`
+    );
+  } catch (e) {
+    toast('Undo failed: ' + e.message);
+  } finally {
+    undoBusy = false;
+  }
 }
 
 // ---------- Rename ----------
@@ -834,7 +869,7 @@ $('followSymlinks').addEventListener('change', (e) => {
 
 // ---------- Delete confirmation modal ----------
 function openConfirmDelete(item) {
-  $('confirmText').textContent = `“${item.name}” will be moved to the system trash.`;
+  $('confirmText').textContent = `“${item.name}” will be moved to the trash (Z to undo).`;
   confirmModal.classList.remove('hidden');
   // Focus the confirm button so Enter activates it natively (no double-fire
   // with the global keydown handler) and Esc still cancels.
@@ -910,6 +945,14 @@ document.addEventListener('keydown', (e) => {
   if (isModalOpen()) return; // modal handles its own keys
   // Don't hijack keys while a form control (sort menu, checkboxes) is focused.
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  // Undo: plain Z, or Cmd+Z (macOS) / Ctrl+Z (Linux). No redo, so Shift+Cmd+Z
+  // is left alone.
+  if ((e.key === 'z' || e.key === 'Z') && !e.altKey) {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey) return;
+    e.preventDefault();
+    undoLast();
+    return;
+  }
   switch (e.key) {
     case 'ArrowRight':
     case 'ArrowDown':
