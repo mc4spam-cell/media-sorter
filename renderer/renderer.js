@@ -23,7 +23,9 @@ const state = {
   folder: null,
   kind: 'photos', // 'photos' | 'videos'
   items: [], // { name, path, mtimeMs, rel }
-  selected: 0,
+  cursor: 0, // index of the current file: keyboard focus, viewer, Enter, G/S
+  sel: new Set(), // selected file PATHS (indices shift on trash/reload)
+  anchor: 0, // index Shift-click / Shift+arrow ranges start from
   fullscreen: false,
   recursive: false,
   maximize: false, // upscale photos to fill the window in fullscreen
@@ -142,7 +144,7 @@ async function pickFolder() {
     if (!folder) return;
     state.folder = folder;
     $('folderPath').textContent = folder;
-    await loadList();
+    await loadList({ reset: true });
   } catch (e) {
     console.error('pickFolder failed:', e);
     toast('Open folder failed: ' + e.message);
@@ -151,10 +153,14 @@ async function pickFolder() {
 
 // Monotonic token so overlapping listings can't clobber each other: a slow
 // api.list() that resolves after a newer call is discarded.
+// reset: a new folder or mode — start on the first file. Otherwise (re-sort,
+// type filter, undo…) keep the selection for files still listed, and the cursor
+// on the same file when it's still there.
 let listSeq = 0;
-async function loadList() {
+async function loadList({ reset = false } = {}) {
   if (!state.folder) return;
   const seq = ++listSeq;
+  const prevCursorPath = cursorItem() ? cursorItem().path : null;
   stopAllTimers();
   let items;
   try {
@@ -173,9 +179,25 @@ async function loadList() {
   }
   if (seq !== listSeq) return; // a newer loadList() started: drop this stale result
   state.items = items;
-  state.selected = 0;
+  if (reset) {
+    state.cursor = 0;
+    state.sel = new Set(items.length ? [items[0].path] : []);
+  } else {
+    const listed = new Set(items.map((it) => it.path));
+    state.sel = new Set([...state.sel].filter((p) => listed.has(p)));
+    const idx = items.findIndex((it) => it.path === prevCursorPath);
+    state.cursor = idx >= 0 ? idx : Math.max(0, Math.min(state.cursor, items.length - 1));
+    if (!state.sel.size && items.length) state.sel.add(items[state.cursor].path);
+  }
+  state.anchor = state.cursor;
   renderGrid();
-  $('count').textContent = `${state.items.length} ${state.kind}`;
+  updateCount();
+}
+
+function updateCount() {
+  const n = state.sel.size;
+  $('count').textContent =
+    `${state.items.length} ${state.kind}` + (n > 1 ? ` · ${n} selected` : '');
 }
 
 // ---------- Grid rendering ----------
@@ -192,13 +214,18 @@ function resetGrid() {
   });
 }
 
+// Cell element per item index, so selection repaints don't query the DOM.
+let cells = [];
+
 function renderGrid() {
   resetGrid();
   gridEl.innerHTML = '';
+  cells = [];
   state.items.forEach((item, idx) => {
     const cell = document.createElement('div');
-    cell.className = 'cell' + (idx === state.selected ? ' selected' : '');
+    cell.className = 'cell';
     cell.dataset.idx = String(idx);
+    cells.push(cell);
 
     const label = document.createElement('div');
     label.className = 'label';
@@ -244,15 +271,22 @@ function renderGrid() {
     }
 
     cell.appendChild(label);
-    cell.addEventListener('click', () => {
-      setSelected(idx);
-      if (state.kind === 'photos') openViewer();
-      else playCurrent();
+    // Click selects (Shift: range, Cmd/Ctrl: toggle); double-click opens.
+    cell.addEventListener('click', (e) => {
+      if (e.shiftKey) select(idx, 'range');
+      else if (e.metaKey || e.ctrlKey) select(idx, 'toggle');
+      else select(idx);
+    });
+    cell.addEventListener('dblclick', (e) => {
+      if (e.shiftKey || e.metaKey || e.ctrlKey) return;
+      select(idx);
+      openCurrent();
     });
     gridEl.appendChild(cell);
     if (state.kind === 'videos') gridObserver.observe(cell);
   });
-  scrollSelectedIntoView();
+  paintSelection();
+  scrollCursorIntoView();
 }
 
 // ---------- Video stop-motion (lazy, viewport-gated) ----------
@@ -342,23 +376,81 @@ async function extractFrames(st) {
 }
 
 // ---------- Selection ----------
-function setSelected(idx) {
+// The cursor is the current file; the selection is a set of paths the bulk
+// actions (X, and later move/copy/batch rename) apply to in the grid.
+function cursorItem() {
+  return state.items[state.cursor];
+}
+
+// Selected items, in list order.
+function selectedItems() {
+  return state.items.filter((it) => state.sel.has(it.path));
+}
+
+// What an action applies to: the selection in the grid, only the displayed
+// photo in the fullscreen viewer.
+function actionTargets() {
+  if (state.fullscreen) return cursorItem() ? [cursorItem()] : [];
+  return selectedItems();
+}
+
+// Move the cursor to idx and update the selection:
+//   'only'   select just this file (plain click, arrows)
+//   'toggle' add/remove it (Cmd/Ctrl-click)
+//   'range'  select anchor..idx (Shift-click, Shift+arrows)
+function select(idx, mode = 'only') {
   if (!state.items.length) return;
-  state.selected = Math.max(0, Math.min(idx, state.items.length - 1));
-  document.querySelectorAll('.cell').forEach((c) => {
-    c.classList.toggle('selected', Number(c.dataset.idx) === state.selected);
-  });
-  scrollSelectedIntoView();
+  idx = Math.max(0, Math.min(idx, state.items.length - 1));
+  const p = state.items[idx].path;
+  if (mode === 'toggle') {
+    if (state.sel.has(p)) state.sel.delete(p);
+    else state.sel.add(p);
+    state.anchor = idx;
+  } else if (mode === 'range') {
+    const [a, b] = [Math.min(state.anchor, idx), Math.max(state.anchor, idx)];
+    state.sel = new Set(state.items.slice(a, b + 1).map((it) => it.path));
+  } else {
+    state.sel = new Set([p]);
+    state.anchor = idx;
+  }
+  state.cursor = idx;
+  paintSelection();
+  scrollCursorIntoView();
   if (state.fullscreen) updateViewer();
 }
 
-function move(delta) {
-  if (!state.items.length) return;
-  setSelected(state.selected + delta);
+// Select these paths (those listed), cursor on the first one.
+function selectPaths(paths) {
+  const want = new Set(paths);
+  const idx = state.items.findIndex((it) => want.has(it.path));
+  if (idx < 0) return false;
+  select(idx);
+  for (const it of state.items) if (want.has(it.path)) state.sel.add(it.path);
+  paintSelection();
+  return true;
 }
 
-function scrollSelectedIntoView() {
-  const cell = gridEl.querySelector('.cell.selected');
+function selectAll() {
+  state.sel = new Set(state.items.map((it) => it.path));
+  paintSelection();
+}
+
+function paintSelection() {
+  gridEl.classList.toggle('multi', state.sel.size > 1);
+  cells.forEach((c, i) => {
+    c.classList.toggle('selected', state.sel.has(state.items[i].path));
+    c.classList.toggle('cursor', i === state.cursor);
+  });
+  updateCount();
+}
+
+function move(delta, extend = false) {
+  if (!state.items.length) return;
+  select(state.cursor + delta, extend && !state.fullscreen ? 'range' : 'only');
+}
+
+function scrollCursorIntoView() {
+  const cell = cells[state.cursor];
   if (cell) cell.scrollIntoView({ block: 'nearest' });
 }
 
@@ -375,10 +467,17 @@ function closeViewer() {
   viewerEl.classList.add('hidden');
 }
 
-// Play the selected video in the system's default player (Chromium can't
+// Open the current file: fullscreen viewer for photos, OS player for videos
+// (double-click / Enter).
+function openCurrent() {
+  if (state.kind === 'photos') openViewer();
+  else playCurrent();
+}
+
+// Play the current video in the system's default player (Chromium can't
 // decode avi/mpg/mkv, so we hand off to the OS).
 async function playCurrent() {
-  const item = state.items[state.selected];
+  const item = cursorItem();
   if (!item) return;
   try {
     await api.openExternal(item.path);
@@ -387,9 +486,9 @@ async function playCurrent() {
   }
 }
 
-// Open the selected file in a specific external editor (GIMP / Shotcut).
+// Open the current file in a specific external editor (GIMP / Shotcut).
 async function openWithApp(app) {
-  const item = state.items[state.selected];
+  const item = cursorItem();
   if (!item) return;
   const label = app === 'gimp' ? 'GIMP' : 'Shotcut';
   try {
@@ -415,12 +514,12 @@ function hideViewerError() {
 }
 
 function updateViewer() {
-  const item = state.items[state.selected];
+  const item = cursorItem();
   if (!item) return closeViewer();
   resetZoom();
   hideViewerError();
   viewerImg.src = api.toFileURL(item.path);
-  viewerCaption.textContent = `${item.name}  ·  ${state.selected + 1}/${state.items.length}`;
+  viewerCaption.textContent = `${item.name}  ·  ${state.cursor + 1}/${state.items.length}`;
 }
 
 // ---------- Zoom & pan in the fullscreen viewer ----------
@@ -501,7 +600,7 @@ viewerImg.addEventListener('load', () => {
   refitViewer();
 });
 viewerImg.addEventListener('error', () => {
-  const item = state.items[state.selected];
+  const item = cursorItem();
   if (state.fullscreen && item) showViewerError(item);
 });
 window.addEventListener('resize', () => {
@@ -570,19 +669,19 @@ viewerImg.addEventListener('dblclick', (e) => {
 // ---------- Trash ----------
 // Entry point for the X key / delete action. Honors the "Confirm before
 // deleting" preference: when on, ask first; when off, trash straight away.
+// Applies to the selection in the grid, to the displayed photo in the viewer.
+// Targets are captured now, so the confirmation acts on what it announced.
 function trashCurrent() {
-  const item = state.items[state.selected];
-  if (!item) return;
-  if (state.confirmDelete) openConfirmDelete(item);
-  else doTrash();
+  const items = actionTargets();
+  if (!items.length) return;
+  if (state.confirmDelete) openConfirmDelete(items);
+  else doTrash(items);
 }
 
-async function doTrash() {
-  const item = state.items[state.selected];
-  if (!item) return;
+async function doTrash(items) {
   let res;
   try {
-    res = await api.trash([item.path]);
+    res = await api.trash(items.map((it) => it.path));
   } catch (e) {
     toast('Trash failed: ' + e.message);
     return;
@@ -591,19 +690,29 @@ async function doTrash() {
     toast('Trash failed: ' + (res.errors[0] ? res.errors[0].message : 'unknown error'));
     return;
   }
-  state.items.splice(state.selected, 1);
-  // A file that couldn't be staged (read-only folder) went straight to the OS trash.
-  toast(res.fallback.length ? `Trashed ${item.name} (cannot be undone)` : `Trashed ${item.name} · Z to undo`);
-  $('count').textContent = `${state.items.length} ${state.kind}`;
+  const gone = new Set(res.trashed);
+  // Land the cursor where the first trashed file was.
+  const first = state.items.findIndex((it) => gone.has(it.path));
+  state.items = state.items.filter((it) => !gone.has(it.path));
+  for (const p of gone) state.sel.delete(p);
 
+  const n = res.trashed.length;
+  const what = n === 1 ? items.find((it) => gone.has(it.path)).name : `${n} files`;
+  let msg = `Trashed ${what}`;
+  // Files that couldn't be staged (read-only folder) went straight to the OS trash.
+  if (res.fallback.length === n) msg += ' (cannot be undone)';
+  else if (res.fallback.length) msg += ` · Z to undo (${res.fallback.length} not undoable)`;
+  else msg += ' · Z to undo';
+  if (res.errors.length) msg += ` · ${res.errors.length} failed`;
+  toast(msg);
+
+  renderGrid();
   if (!state.items.length) {
     closeViewer();
-    renderGrid();
+    updateCount();
     return;
   }
-  if (state.selected >= state.items.length) state.selected = state.items.length - 1;
-  renderGrid();
-  if (state.fullscreen) updateViewer();
+  select(Math.min(Math.max(first, 0), state.items.length - 1));
 }
 
 // ---------- Undo (Z / Cmd+Z / Ctrl+Z) ----------
@@ -619,10 +728,11 @@ async function undoLast() {
       return;
     }
     await loadList();
-    const idx = state.items.findIndex((it) => res.restored.includes(it.path));
-    if (idx >= 0) setSelected(idx);
-    else if (!state.items.length) closeViewer();
-    else if (state.fullscreen) updateViewer();
+    // Land on the restored file(s), selected together (refreshes the viewer).
+    if (!selectPaths(res.restored)) {
+      if (!state.items.length) closeViewer();
+      else if (state.fullscreen) updateViewer();
+    }
     toast(
       res.errors.length
         ? `Undone: ${res.label} · ${res.restored.length} restored, ${res.errors.length} failed (${res.errors[0]})`
@@ -636,9 +746,17 @@ async function undoLast() {
 }
 
 // ---------- Rename ----------
+// The file the open rename dialog applies to.
+let renameTarget = null;
+
 function openRename() {
-  const item = state.items[state.selected];
-  if (!item) return;
+  const items = actionTargets();
+  if (!items.length) return;
+  if (items.length > 1) {
+    toast('Select a single file to rename');
+    return;
+  }
+  const item = (renameTarget = items[0]);
   renameModal.classList.remove('hidden');
   renameInput.value = item.name;
   renameInput.focus();
@@ -652,16 +770,21 @@ function closeRename() {
 }
 
 async function confirmRename() {
-  const item = state.items[state.selected];
+  const item = renameTarget;
+  renameTarget = null;
   if (!item) return closeRename();
   const newName = renameInput.value;
   closeRename();
   if (!newName || newName === item.name) return;
   try {
     const newPath = await api.rename(item.path, newName);
+    const wasSelected = state.sel.delete(item.path);
     item.path = newPath;
     item.name = newPath.split(/[/\\]/).pop();
-    toast(`Renamed to ${item.name}`);
+    // Keep the subfolder label (recursive mode) in step with the new name.
+    if (item.rel) item.rel = item.rel.replace(/[^/\\]*$/, item.name);
+    if (wasSelected) state.sel.add(newPath);
+    toast(`Renamed to ${item.name} · Z to undo`);
     renderGrid();
     if (state.fullscreen) updateViewer();
   } catch (e) {
@@ -677,7 +800,7 @@ function setKind(kind) {
   $('tabPhotos').classList.toggle('active', kind === 'photos');
   $('tabVideos').classList.toggle('active', kind === 'videos');
   buildTypesPopover(); // type list is per-mode
-  loadList();
+  loadList({ reset: true });
 }
 
 // ---------- Open a specific file (OS "Open with") ----------
@@ -745,15 +868,14 @@ async function openPath(filePath) {
 
   state.folder = dir;
   $('folderPath').textContent = dir;
-  await loadList();
+  await loadList({ reset: true });
 
   // Select the opened file (fall back to name if the exact path doesn't match).
   let idx = state.items.findIndex((it) => it.path === filePath);
   if (idx < 0) idx = state.items.findIndex((it) => it.name === name);
   if (idx >= 0) {
-    setSelected(idx);
+    select(idx);
     if (kind === 'photos') openViewer();
-    else scrollSelectedIntoView();
   } else {
     toast('File not found in folder: ' + name);
   }
@@ -868,8 +990,14 @@ $('followSymlinks').addEventListener('change', (e) => {
 });
 
 // ---------- Delete confirmation modal ----------
-function openConfirmDelete(item) {
-  $('confirmText').textContent = `“${item.name}” will be moved to the trash (Z to undo).`;
+// Files the open confirmation dialog will trash.
+let pendingTrash = [];
+function openConfirmDelete(items) {
+  pendingTrash = items;
+  $('confirmText').textContent =
+    items.length === 1
+      ? `“${items[0].name}” will be moved to the trash (Z to undo).`
+      : `${items.length} files will be moved to the trash (Z to undo).`;
   confirmModal.classList.remove('hidden');
   // Focus the confirm button so Enter activates it natively (no double-fire
   // with the global keydown handler) and Esc still cancels.
@@ -879,7 +1007,7 @@ function closeConfirmDelete() { confirmModal.classList.add('hidden'); }
 $('confirmCancel').addEventListener('click', closeConfirmDelete);
 $('confirmOk').addEventListener('click', () => {
   closeConfirmDelete();
-  doTrash();
+  doTrash(pendingTrash);
 });
 confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirmDelete(); });
 
@@ -953,24 +1081,33 @@ document.addEventListener('keydown', (e) => {
     undoLast();
     return;
   }
+  // Select all: Cmd+A (macOS) / Ctrl+A (Linux), grid only.
+  if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    if (!state.fullscreen) selectAll();
+    return;
+  }
+  // Other shortcuts are bare keys: Cmd+X, Ctrl+R… must not trigger them.
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
   switch (e.key) {
     case 'ArrowRight':
     case 'ArrowDown':
       e.preventDefault();
-      move(1);
+      move(1, e.shiftKey); // Shift extends the selection
       break;
     case 'ArrowLeft':
     case 'ArrowUp':
       e.preventDefault();
-      move(-1);
+      move(-1, e.shiftKey);
       break;
     case 'Enter':
       if (state.fullscreen) break;
-      if (state.kind === 'photos') openViewer();
-      else playCurrent();
+      openCurrent();
       break;
     case 'Escape':
       if (state.fullscreen) closeViewer();
+      // Grid: collapse a multi-selection back to the current file.
+      else if (state.sel.size > 1 && cursorItem()) select(state.cursor);
       break;
     case '0':
       if (state.fullscreen) resetZoom();

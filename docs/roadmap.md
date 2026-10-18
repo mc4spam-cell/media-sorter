@@ -133,7 +133,7 @@ Les chemins de `sel` sont mis à jour après un renommage, et filtrés après un
 | ← → ↑ ↓ | Déplacent le curseur et réduisent la sélection à ce seul fichier (comme aujourd'hui). |
 | Shift + flèches | Étendent la plage depuis l'ancre. |
 | Cmd/Ctrl + A | Tout sélectionner (grille uniquement). |
-| Échap (grille) | Vide la sélection (en visionneuse : ferme, comme aujourd'hui). |
+| Échap (grille) | Réduit la sélection au seul fichier courant (en visionneuse : ferme, comme aujourd'hui). Une sélection vide laisserait X agir sur un fichier non surligné. |
 
 - Implémentation du double-clic : écouteur `dblclick` sur la cellule (le premier clic a déjà sélectionné le fichier, le second ouvre). Changement visible pour l'utilisateur, à signaler dans le CHANGELOG et la fenêtre des raccourcis.
 - Rendu : classe `selected` pour l'appartenance à `sel`, classe `cursor` (contour distinct) pour le curseur. La mise à jour des classes se fait sans `renderGrid()` complet (on garde un tableau des cellules plutôt que `querySelectorAll` à chaque clic).

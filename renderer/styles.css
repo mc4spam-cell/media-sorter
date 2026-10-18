@@ -192,6 +192,13 @@ body {
 .cell.selected {
   border-color: var(--accent);
 }
+/* The cursor (current file) gets its own marker whenever it isn't obvious:
+   several files selected, or the cursor sits on an unselected file. */
+.grid.multi .cell.cursor,
+.cell.cursor:not(.selected) {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
 .cell img {
   width: 100%;
   height: 100%;
