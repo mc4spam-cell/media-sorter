@@ -11,7 +11,7 @@ Le mot « trier » désigne ici un **tri par revue** (garder / jeter / renommer 
 
 ## 2. Personas et contexte d'usage
 
-Déduit du README (`README.md:3-4`) et de l'historique git ; il ne s'agit pas d'une étude formelle.
+Déduit du README (introduction) et de l'historique git ; il ne s'agit pas d'une étude formelle.
 
 | Persona | Besoin | Ce que l'app lui apporte |
 |---|---|---|

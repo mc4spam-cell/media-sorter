@@ -94,6 +94,7 @@ and videos.
 - macOS `.dmg` and Linux `.AppImage` + `.deb` via electron-builder.
 - Bundled `ffmpeg` (ffmpeg-static); OS trash via the `trash` package.
 
+[1.2.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.0
 [1.1.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0
 [1.0.1]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.0.1
 [1.0.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.0.0

@@ -1,7 +1,7 @@
 # Build, déploiement et versioning
 
-> Références `fichier:ligne` relatives à `/Users/mc/media-sorter`.
-> Version documentée : **1.1.0** (`package.json`, `CHANGELOG.md:7`).
+> Références au code : fichier et symbole, sans numéro de ligne ; chemins relatifs à la racine du projet.
+> Version documentée : **1.2.0** (`package.json`, `CHANGELOG.md`).
 > Voir aussi [config.md §7](config.md#7-configuration-de-build-packagejson) pour la configuration `electron-builder`.
 
 ## 1. Prérequis
@@ -11,9 +11,9 @@
 | Node.js | ≥ 18 (le script Ubuntu installe Node 20.x si absent ou trop ancien) | `install-ubuntu.sh` |
 | npm | fourni avec Node | — |
 | Build macOS (`.dmg`) | Être sous macOS | convention electron-builder, non vérifiée dans le dépôt |
-| Build Linux (`AppImage`, `.deb`) | Être **sous Linux** | `README.md:67` : le binaire ffmpeg est téléchargé pour la plateforme de build |
+| Build Linux (`AppImage`, `.deb`) | Être **sous Linux** | `README.md` : le binaire ffmpeg est téléchargé pour la plateforme de build |
 | Exécution AppImage | `libfuse2` (ou `libfuse2t64`) | `install-ubuntu.sh` |
-| Éditeurs externes (optionnels) | GIMP, Shotcut | `README.md:89`, touches G et S |
+| Éditeurs externes (optionnels) | GIMP, Shotcut | `README.md`, touches G et S |
 
 ## 2. Scripts npm
 
@@ -66,7 +66,7 @@ npm install
 npm run dist:linux
 ```
 
-Puis, au choix (`README.md:84-86`) :
+Puis, au choix (`README.md`) :
 - `chmod +x dist/*.AppImage && ./dist/*.AppImage` ;
 - `sudo apt install ./dist/*.deb`, et lancement depuis le menu.
 
@@ -85,12 +85,12 @@ npm install
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
 ```
 
-(`README.md:57-59`.) La variable désactive la recherche automatique d'un certificat de signature. **Aucune signature ni notarisation n'est configurée** dans `package.json` : pas d'identité, pas de `hardenedRuntime`, pas de `notarize`.
+(`README.md`.) La variable désactive la recherche automatique d'un certificat de signature. **Aucune signature ni notarisation n'est configurée** dans `package.json` : pas d'identité, pas de `hardenedRuntime`, pas de `notarize`.
 
 ### 4.2 Installation et Gatekeeper
 
 1. Ouvrir le `.dmg`, glisser **Media Sorter** dans **Applications**.
-2. L'application étant non signée, Gatekeeper bloque le premier lancement. Deux solutions (`README.md:62-64`) :
+2. L'application étant non signée, Gatekeeper bloque le premier lancement. Deux solutions (`README.md`) :
    - clic droit sur l'application, puis **Ouvrir**, puis **Ouvrir** ;
    - `xattr -dr com.apple.quarantine "/Applications/Media Sorter.app"`.
 
@@ -154,8 +154,9 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 | 1.0.0 | 2026-06-04 | Version initiale (macOS + Linux) | `v1.0.0` |
 | 1.0.1 | 2026-06-06 | Correctif : lancement sain des applications externes depuis l'AppImage | `v1.0.1` |
 | 1.1.0 | 2026-10-17 | Bouton des raccourcis, « Ouvrir avec » | `v1.1.0` |
+| 1.2.0 | 2026-10-18 | Annulation (10 actions), sélection multiple, renommage en masse, déplacement/copie, Cmd/Ctrl+touche = touche seule | à poser (`v1.2.0`) |
 
-Les trois tags existent dans le dépôt (`git tag -l`). Le commit `889e4a2` est intitulé « Release 1.1.0 ».
+Les tags `v1.0.0` à `v1.1.0` existent dans le dépôt (`git tag -l`) ; `v1.2.0` sera posé à la publication. Le commit `889e4a2` est intitulé « Release 1.1.0 », `f66e9aa` « Release 1.2.0 ».
 
 ### 5.3 Procédure de sortie
 
@@ -203,5 +204,5 @@ Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, com
 - **README** : mis à jour le 2026-10-17 — il pointe désormais vers la page GitHub Releases et liste les trois artefacts 1.1.0 (il citait auparavant `dist/Media Sorter-1.0.0.dmg`).
 - **Nom des artefacts macOS** : la release 1.1.0 utilise des suffixes `-intel`/`-arm64` posés manuellement ; depuis le commit `8048843`, les builds locaux emploient le nommage automatique `-x64`/`-arm64` (voir §4.3).
 - **Pas de signature** : l'avertissement Gatekeeper est attendu pour tout utilisateur qui n'est pas le propriétaire de la machine de build.
-- **ffmpeg par plateforme** : un `.AppImage` ou `.deb` construit sur macOS embarquerait le binaire macOS, et les vignettes vidéo ne fonctionneraient pas (`README.md:67`).
+- **ffmpeg par plateforme** : un `.AppImage` ou `.deb` construit sur macOS embarquerait le binaire macOS, et les vignettes vidéo ne fonctionneraient pas (`README.md`).
 - **Pas de tests** : toute validation passe par l'exécution manuelle (`npm start`).

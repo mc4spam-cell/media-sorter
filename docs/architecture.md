@@ -1,6 +1,6 @@
 # Architecture technique
 
-> Références au format `fichier:ligne` relatives à la racine du projet `/Users/mc/media-sorter`.
+> Références au code : fichier et symbole (fonction, constante), sans numéro de ligne ; chemins relatifs à la racine du projet.
 > Voir aussi [overview.md](overview.md), [features.md](features.md), [config.md](config.md).
 
 ## 1. Vue d'ensemble
@@ -54,7 +54,7 @@ Il n'existe pas de dossier de tests : aucun test automatisé n'est présent dans
 
 ## 3. Canaux IPC
 
-Toutes les communications sont des `invoke` (requête/réponse) sauf les événements poussés par le processus principal (`open-file`, `transfer:progress`, `transfer:end`).
+Toutes les communications sont des `invoke` (requête/réponse), sauf les événements poussés par le processus principal (`open-file`, `transfer:progress`, `transfer:end`, `shortcut`) et le message à sens unique `ui:textEditing` (`send`, renderer → main).
 
 | Canal | Sens | Entrée | Sortie | Implémentation | Pont (preload) |
 |---|---|---|---|---|---|
@@ -86,6 +86,7 @@ Toutes les communications sont des `invoke` (requête/réponse) sauf les événe
 - Une seule fenêtre `BrowserWindow` 1400 × 900, fond `#000000`, titre « Media Sorter » (`main.js`).
 - `contextIsolation: true`, `nodeIntegration: false`, `preload` = `preload.js` (`main.js`).
 - Barre de menu masquée (`main.js`).
+- **Raccourcis Cmd/Ctrl** : `before-input-event` capte, avant le menu d'application par défaut, les combinaisons Cmd/Ctrl sur les touches de l'app (`FORWARDED_SHORTCUTS`) et les renvoie au renderer comme la touche seule (événement `shortcut`), sauf quand un champ texte a le focus (`ui:textEditing`). Voir [features.md, FN-17](features.md#fn-17-table-des-raccourcis). Toute nouvelle touche de raccourci doit être ajoutée à `FORWARDED_SHORTCUTS`.
 - Zoom natif de la page désactivé après chargement (`setVisualZoomLevelLimits(1, 1)`, `main.js`) : le pinch-zoom est donc géré uniquement par l'application.
 
 ### 4.2 Cycle de vie
@@ -186,7 +187,7 @@ loadList()  (renderer)
             ├─ walk(dir) : readdir withFileTypes, récursif si demandé
             ├─ filtre extension (minuscules), stat pour mtimeMs
             └─ tri (name localeCompare numeric | mtime) asc/desc
-  └─ state.items = résultat ; selected = 0 ; renderGrid()
+  └─ state.items = résultat ; nouveau dossier/mode : cursor = 0, sel = {premier} ; sinon sélection et curseur conservés ; renderGrid()
 ```
 
 ### 7.2 Vignette vidéo
@@ -242,5 +243,5 @@ Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement
 
 - **Pas de test automatisé** dans le dépôt.
 - **Électron `asar: false`** (`package.json`, section `build`) : `ffmpeg` et `trash` restent des exécutables directement accessibles. La branche `app.asar` de `main.js` est donc du code défensif.
-- **Persistance** uniquement via `localStorage` du renderer (voir [config.md §3](config.md#3-préférences-persistées)) et le cache de frames sur disque.
+- **Persistance** uniquement via `localStorage` du renderer (voir [config.md §3](config.md#3-préférences-persistées)), le cache de frames sur disque et le journal d'annulation `<userData>/undo-journal.json` (vidé à chaque purge, voir [config.md §5](config.md#5-chemins-système)).
 - **Plateforme de build** : `ffmpeg-static` télécharge le binaire correspondant à la plateforme au moment de l'installation des dépendances (`node_modules/ffmpeg-static/install.js`). Un build doit donc être fait sur la plateforme cible ([build-and-deploy.md](build-and-deploy.md)).

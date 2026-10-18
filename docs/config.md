@@ -1,6 +1,6 @@
 # Configuration, formats et chemins
 
-> Références `fichier:ligne` relatives à `/Users/mc/media-sorter`.
+> Références au code : fichier et symbole (fonction, constante), sans numéro de ligne ; chemins relatifs à la racine du projet.
 > L'application n'a **aucun fichier de configuration utilisateur**. Les paramètres sont de trois sortes : constantes codées en dur, préférences enregistrées dans le navigateur interne, et variables d'environnement (build et binaire ffmpeg).
 
 ## 1. Sources de configuration
@@ -28,7 +28,7 @@
 
 | Constante | Valeur | Réf. | Effet |
 |---|---|---|---|
-| `FRAME_INTERVAL_SEC` | 60 | `main.js` | Une image par minute de vidéo |
+| `FRAME_INTERVAL_SEC` | 60 | `main.js` | Pas minimal entre deux images ; pas réel = `max(60 s, durée / MAX_FRAMES)` (voir features.md FN-07) |
 | `MAX_FRAMES` | 20 | `main.js` | Plafond d'images par vidéo |
 | `FFMPEG_TIMEOUT_MS` | 20 000 | `main.js` | Délai maximal par appel ffmpeg (extraction) |
 | Délai de la sonde de durée | 15 000 ms | `main.js` | Délai avant arrêt de `ffmpeg -i` |
@@ -169,7 +169,7 @@ L'application n'a **pas** de variable de configuration propre.
 
 | Variable | Usage | Source |
 |---|---|---|
-| `CSC_IDENTITY_AUTO_DISCOVERY=false` | Désactive la recherche automatique d'un certificat de signature macOS. Recommandé dans le README pour le build `dist:mac`. | `README.md:59` |
+| `CSC_IDENTITY_AUTO_DISCOVERY=false` | Désactive la recherche automatique d'un certificat de signature macOS. Recommandé dans le README pour le build `dist:mac`. | `README.md` (Install permanently → macOS) |
 | `npm_config_platform`, `npm_config_arch` | Plateforme et architecture ciblées pour le téléchargement du binaire ffmpeg à l'installation. | `node_modules/ffmpeg-static/install.js` |
 | `FFMPEG_BINARY_RELEASE`, `FFMPEG_BINARIES_URL` | Version et source du binaire ffmpeg téléchargé (valeurs par défaut du paquet : release `b6.1.1`). | `node_modules/ffmpeg-static/package.json` |
 

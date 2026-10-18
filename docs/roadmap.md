@@ -2,7 +2,7 @@
 
 Plan d'implémentation pour la version **1.2.0**. Rédigé le 2026-10-18 à partir du code 1.1.0 (`main.js`, `preload.js`, `renderer/renderer.js`).
 
-> **Statut : réalisé dans la 1.2.0** (phases 1 à 6, 2026-10-18). Le comportement livré fait foi dans [features.md](features.md) (FN-12, FN-13, FN-20 à FN-23) ; ce document garde la trace du plan et des décisions. Écarts : Échap réduit la sélection au lieu de la vider ; `freeBytes` est devenu `diskSpace` / `hasRoomFor`.
+> **Statut : réalisé dans la 1.2.0** (phases 1 à 6, 2026-10-18). Le comportement livré fait foi dans [features.md](features.md) (FN-12, FN-13, FN-20 à FN-23) ; ce document garde la trace du plan et des décisions. Écarts : Échap réduit la sélection au lieu de la vider ; `freeBytes` est devenu `diskSpace` / `hasRoomFor` ; « tout sélectionner » est **A** (Cmd/Ctrl+A en est l'équivalent, comme pour toute touche) et l'annulation est **Z** : chaque combinaison Cmd/Ctrl vaut la touche seule, sans exception (FN-17), contrairement aux mentions `Cmd+Z` / `Cmd+A` / `metaKey || ctrlKey` du plan ci-dessous.
 
 ## 0. Vue d'ensemble
 
