@@ -1,7 +1,7 @@
 # Build, déploiement et versioning
 
 > Références au code : fichier et symbole, sans numéro de ligne ; chemins relatifs à la racine du projet.
-> Version documentée : **1.2.1** (`package.json`, `CHANGELOG.md`).
+> Version documentée : **1.3.0** (`package.json`, `CHANGELOG.md`).
 > Voir aussi [config.md §7](config.md#7-configuration-de-build-packagejson) pour la configuration `electron-builder`.
 
 ## 1. Prérequis
@@ -87,7 +87,7 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac
 
 (`README.md`.) La variable désactive la recherche automatique d'un certificat de signature. **Aucune signature ni notarisation n'est configurée** dans `package.json` : pas d'identité, pas de `hardenedRuntime`, pas de `notarize`.
 
-Avec electron-builder 26 (montée de version [Unreleased]), le build affiche « skipped macOS application code signing » : le bundle n'est pas scellé, mais les exécutables Mach-O d'Electron restent signés ad hoc par l'éditeur de liens (`codesign -dv` : `flags=adhoc,linker-signed`), ce qui suffit pour lancer l'app arm64 sur Apple Silicon. Vérifié sur un build `--arm64` croisé depuis un Mac Intel (2026-10-19), non lancé sur Apple Silicon. Le `.dmg` exige **macOS 13** ou plus récent.
+Avec electron-builder 26 (1.3.0), le build affiche « skipped macOS application code signing » : le bundle n'est pas scellé, mais les exécutables Mach-O d'Electron restent signés ad hoc par l'éditeur de liens (`codesign -dv` : `flags=adhoc,linker-signed`), ce qui suffit pour lancer l'app arm64 sur Apple Silicon. Vérifié sur un build `--arm64` croisé depuis un Mac Intel (2026-10-19), non lancé sur Apple Silicon ; un tel build croisé embarque le ffmpeg x64, d'où la règle « une machine par cible » de `scripts/release.sh`. Le `.dmg` exige **macOS 13** ou plus récent.
 
 ### 4.2 Installation et Gatekeeper
 
@@ -158,8 +158,9 @@ Lu dans `dist/mac/Media Sorter.app/Contents/Info.plist` :
 | 1.1.0 | 2026-10-17 | Bouton des raccourcis, « Ouvrir avec » | `v1.1.0` |
 | 1.2.0 | 2026-10-18 | Annulation (10 actions), sélection multiple, renommage en masse, déplacement/copie, Cmd/Ctrl+touche = touche seule | `v1.2.0` |
 | 1.2.1 | 2026-10-19 | Rotation sans perte (← / →, ↑ / ↓ naviguent), corbeille sans interprétation glob | `v1.2.1` |
+| 1.3.0 | 2026-10-20 | Electron 44 / electron-builder 26 / trash 9 (macOS 13+, Node 22.12+ pour construire), script de release unique pour les 4 plateformes | `v1.3.0` |
 
-Les tags `v1.0.0` à `v1.2.1` existent dans le dépôt (`git tag -l`). `v1.2.0` pointe sur `063e390` (avant la rotation). Le commit `889e4a2` est intitulé « Release 1.1.0 », `f66e9aa` « Release 1.2.0 ».
+Les tags `v1.0.0` à `v1.3.0` existent dans le dépôt (`git tag -l`). `v1.2.0` pointe sur `063e390` (avant la rotation). Le commit `889e4a2` est intitulé « Release 1.1.0 », `f66e9aa` « Release 1.2.0 ».
 
 ### 5.3 Procédure de sortie
 
@@ -169,17 +170,35 @@ Les tags `v1.0.0` à `v1.2.1` existent dans le dépôt (`git tag -l`). `v1.2.0` 
 2. Ajouter la section de version et sa date dans `CHANGELOG.md`, plus le lien de release en bas de fichier.
 3. Committer et pousser.
 
-**Publier les artefacts** — trois scripts, un par architecture (ajoutés le 2026-10-17, dans `scripts/`) :
+**Construire et publier** — un seul script, `scripts/release.sh` (depuis la 1.3.0 ; il remplace les `release-*.sh` du 2026-10-17). Il se lance **sur chaque machine cible**, détecte la plateforme et produit ses artefacts :
 
-| Script | À lancer sur | Produit et publie |
+| Machine | Cible | Artefacts |
 |---|---|---|
-| `scripts/release-mac-x64.sh` | n'importe quel Mac | `Media Sorter-<v>-x64.dmg` |
-| `scripts/release-mac-arm64.sh` | n'importe quel Mac | `Media Sorter-<v>-arm64.dmg` |
-| `scripts/release-linux.sh` | **Linux** (ffmpeg par plateforme) | `media-sorter_<v>_amd64.deb` + `.AppImage` |
+| Mac Intel | `mac-x64` | `Media Sorter-<v>-x64.dmg` |
+| Mac Apple Silicon (terminal natif, pas Rosetta) | `mac-arm64` | `Media Sorter-<v>-arm64.dmg` |
+| Linux x86_64 | `linux-amd64` | `media-sorter_<v>_amd64.deb` + `Media Sorter-<v>.AppImage` |
+| Linux aarch64 (ex. VM Ubuntu sur Apple Silicon) | `linux-arm64` | `media-sorter_<v>_arm64.deb` (pas d'AppImage) |
 
-Chaque script (via `scripts/release-lib.sh`) : vérifie `gh` + l'authentification, exige un arbre propre et `npm install` fait, lit la version, **crée et pousse le tag `vX.Y.Z`** s'il manque (avec confirmation), **crée la release GitHub** si absente, construit son architecture puis **téléverse** ses artefacts (`gh release upload --clobber`). Les scripts sont idempotents : lancez-les dans n'importe quel ordre sur les machines voulues ; le premier crée tag + release, les suivants ne font qu'ajouter leurs fichiers. Les deux scripts mac forcent `--x64` / `--arm64`, donc tous deux peuvent tourner sur **un seul** Mac (electron-builder cross-compile) ; seul le `.deb`/AppImage doit être bâti sous Linux.
+```bash
+git fetch --tags && git checkout vX.Y.Z   # le commit tagué (ou main pour le premier)
+bash scripts/release.sh                   # = npm run release : construire + publier
+bash scripts/release.sh --no-upload       # = npm run build:check : construire + vérifier seulement
+```
 
-Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, commit `8048843`). La release 1.1.0 publiée **avant** ces scripts porte encore des suffixes `-intel`/`-arm64` posés manuellement (voir §4.3).
+Options : `--no-upload`, `--no-install` (sauter `npm ci`), `--yes` (répondre oui à tout).
+
+Étapes, avec les pièges qu'elles évitent :
+
+1. **Environnement** : remet `/usr/bin`, `/bin`… dans le `PATH` s'ils manquent (sinon « spawn sips ENOENT »), ajoute Homebrew ; refuse un terminal Rosetta sur Apple Silicon ; exige Node ≥ la version de `engines` avec **npm ≥ 10** (le paquet `npm` 9 d'Ubuntu casse avec Node 22). Sous Linux, propose de les remplacer par Node 22 de NodeSource.
+2. **Source** : pour publier, exige un arbre propre et que **HEAD soit le commit du tag `vX.Y.Z`** (sinon `git checkout vX.Y.Z`) ; si le tag n'existe pas, propose de le créer sur HEAD (déjà poussé) et de le pousser.
+3. **Dépendances** : **`npm ci` systématique** — des `node_modules` laissés par une autre branche construiraient le mauvais Electron, et `ffmpeg-static` ne télécharge que le ffmpeg de la machine hôte (aucune compilation croisée possible, d'où « une machine par cible »). Sur **linux-arm64**, installe au besoin le `fpm` du système (`USE_SYSTEM_FPM=true`) : celui d'electron-builder est x86_64.
+4. **Construction** : `electron-builder` pour la cible (dmg ; deb + AppImage ; deb seul en arm64).
+5. **Vérification** : présence des artefacts attendus, de `lib/` et de la bonne version dans le paquet, architecture du ffmpeg embarqué (`file`), présence de l'encodeur WebP (rotation).
+6. **Publication** : crée la release GitHub si absente (notes = section du CHANGELOG), puis téléverse avec `--clobber`. Idempotent : chaque machine ajoute ses fichiers, dans n'importe quel ordre.
+
+Sous Ubuntu, `install-ubuntu.sh` installe les paquets système (git, curl, file, FUSE), propose GIMP/Shotcut, appelle `scripts/release.sh --no-upload`, puis propose d'installer le `.deb` de l'architecture de la machine.
+
+Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, commit `8048843`). La release 1.1.0, antérieure, porte des suffixes `-intel`/`-arm64` posés à la main (voir §4.3).
 
 ### 5.4 Mise à jour automatique
 
@@ -195,12 +214,15 @@ Nommage : electron-builder produit `-x64` / `-arm64` (config `artifactName`, com
 
 ## 6. Matrice de cibles
 
-| Cible | Commande | Artefacts attendus | Publié (GitHub Releases v1.1.0) | `dist/` local |
-|---|---|---|---|---|
-| macOS Intel (x64) | `npm run dist:mac` (sur Mac Intel) | `.dmg` x64 | ✅ `…-intel.dmg` | présent (x64) |
-| macOS Apple Silicon (arm64) | `npm run dist:mac` (sur Mac Apple Silicon) | `.dmg` arm64 | ✅ `…-arm64.dmg` | absent (build fait ailleurs) |
-| Linux x64 | `npm run dist:linux` (sur Linux) | `.AppImage`, `.deb` | ✅ `…_amd64.deb` | absent (build non réalisé ici) |
-| Windows | — | — | non ciblé | — |
+| Cible | À lancer sur | Commande | Artefacts |
+|---|---|---|---|
+| macOS Intel (x64) | Mac Intel | `bash scripts/release.sh` | `.dmg` x64 |
+| macOS Apple Silicon (arm64) | Mac Apple Silicon | `bash scripts/release.sh` | `.dmg` arm64 |
+| Linux x64 | Linux x86_64 | `bash scripts/release.sh` (ou `install-ubuntu.sh`) | `.deb` amd64 + `.AppImage` |
+| Linux arm64 | Linux aarch64 | `bash scripts/release.sh` (ou `install-ubuntu.sh`) | `.deb` arm64 |
+| Windows | — | — | non ciblé |
+
+Les commandes brutes `npm run dist:mac` / `dist:linux` existent toujours, mais sautent toutes les vérifications du script.
 
 ## 7. Points d'attention
 

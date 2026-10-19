@@ -1,6 +1,6 @@
 # Media Sorter : vue d'ensemble
 
-> Spécifications reconstituées à partir du code source (version **1.2.1**).
+> Spécifications reconstituées à partir du code source (version **1.3.0**).
 > Les pistes d'amélioration encore ouvertes sont listées dans [README.md](README.md#évolutions-possibles).
 
 ## 1. But de l'application

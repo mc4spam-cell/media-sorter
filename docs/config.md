@@ -191,7 +191,7 @@ Extrait des paramètres pertinents pour la configuration :
 | `build.mac.category` | `public.app-category.photography` | `package.json` |
 | `build.mac.artifactName` | `${productName}-${version}-${arch}.${ext}` | `package.json` |
 
-Outil : electron-builder **26** (Electron 44) depuis la montée de version [Unreleased] ; la configuration ci-dessus est inchangée par rapport à electron-builder 24. `asar: false` reste voulu (electron-builder 26 affiche l'avertissement « asar usage is disabled », sans effet) : `ffmpeg` et `macos-trash` doivent rester des exécutables directement lancés. `engines.node` (`>=22.12.0`) est déclaré dans `package.json`.
+Outil : electron-builder **26** (Electron 44) depuis la 1.3.0 ; la configuration ci-dessus est inchangée par rapport à electron-builder 24. `asar: false` reste voulu (electron-builder 26 affiche l'avertissement « asar usage is disabled », sans effet) : `ffmpeg` et `macos-trash` doivent rester des exécutables directement lancés. `engines.node` (`>=22.12.0`) est déclaré dans `package.json`.
 
 Détails de packaging et de signature : voir [build-and-deploy.md](build-and-deploy.md).
 

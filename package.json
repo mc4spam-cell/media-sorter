@@ -1,13 +1,17 @@
 {
   "name": "media-sorter",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Sort photos and videos with thumbnail/fullscreen views, keyboard navigation, multi-selection, undoable trash, rename, move and copy.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist:linux": "electron-builder --linux AppImage deb",
-    "dist:mac": "electron-builder --mac dmg"
+    "dist:mac": "electron-builder --mac dmg",
+    "release": "bash scripts/release.sh",
+    "build:check": "bash scripts/release.sh --no-upload"
   },
+  "homepage": "https://github.com/mc4spam-cell/media-sorter",
+  "repository": "github:mc4spam-cell/media-sorter",
   "author": "mc <273350363+mc4spam-cell@users.noreply.github.com>",
   "license": "MIT",
   "engines": {

@@ -4,7 +4,16 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
-## [Unreleased]
+## [1.3.0] — 2026-10-20
+
+### Added
+- **One release script for the four targets** (`scripts/release.sh`, also
+  `npm run release` / `npm run build:check`): run it on each machine (Mac
+  Intel, Mac Apple Silicon, Linux x86_64, Linux arm64); it checks PATH,
+  Node/npm, the tag, runs `npm ci`, builds, verifies the package (version,
+  `lib/`, ffmpeg architecture, WebP encoder) and uploads to the GitHub
+  release. Replaces the per-architecture `release-*.sh`. `install-ubuntu.sh`
+  now builds through it and supports arm64.
 
 ### Changed
 - **Dependencies upgraded:** Electron 31.7.7 → 44.9.0 (Chromium 152),
@@ -131,6 +140,7 @@ and videos.
 - macOS `.dmg` and Linux `.AppImage` + `.deb` via electron-builder.
 - Bundled `ffmpeg` (ffmpeg-static); OS trash via the `trash` package.
 
+[1.3.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.3.0
 [1.2.1]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.1
 [1.2.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.0
 [1.1.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0

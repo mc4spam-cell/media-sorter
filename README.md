@@ -104,18 +104,20 @@ git clone https://github.com/mc4spam-cell/media-sorter.git
 cd media-sorter
 bash install-ubuntu.sh
 ```
-It installs prerequisites (Node ≥ 22.12, FUSE), optionally GIMP/Shotcut, builds, and offers to install the `.deb`.
+It installs the system packages (git, curl, FUSE), optionally GIMP/Shotcut, builds through `scripts/release.sh` (which sets up Node 22 with npm 10 if needed, and `fpm` on arm64), and offers to install the `.deb`. Works on x86_64 (`_amd64.deb` + AppImage) and arm64 (`_arm64.deb`).
 
-**Manual:**
+**Without installing:** `bash scripts/release.sh --no-upload` (or `npm run build:check`) builds and checks the package for the machine it runs on. Don't use Ubuntu's `npm` package: it's npm 9, which breaks with Node 22.
+
+## Building & publishing a release (maintainers)
+
+`scripts/release.sh` (= `npm run release`) does everything for **the machine it runs on** — Mac Intel, Mac Apple Silicon, Linux x86_64 or Linux arm64 — so run it once on each:
+
 ```bash
-sudo apt install -y nodejs npm        # if not already installed
-git clone https://github.com/mc4spam-cell/media-sorter.git && cd media-sorter
-npm install
-npm run dist:linux                     # produces dist/*.AppImage and dist/*.deb
+git fetch --tags && git checkout vX.Y.Z    # the tagged commit
+bash scripts/release.sh
 ```
-Then either:
-- make the AppImage executable and run it: `chmod +x dist/*.AppImage && ./dist/*.AppImage`, or
-- install the deb: `sudo apt install ./dist/*.deb` (launch from your app menu).
+
+It checks PATH, Node/npm and that HEAD is the tag (offers to create it), runs `npm ci`, builds, verifies the package (version, `lib/`, ffmpeg architecture, WebP encoder), creates the GitHub release if needed and uploads the artifacts. Each target must be built on its own platform: the bundled ffmpeg is the host's. Details: [docs/build-and-deploy.md](docs/build-and-deploy.md#53-procédure-de-sortie).
 
 ## Notes
 - `ffmpeg` ships with the app via `ffmpeg-static`; nothing to install separately. (G/S editor shortcuts do require GIMP/Shotcut installed.)

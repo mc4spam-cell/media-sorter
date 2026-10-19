@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
-# install-ubuntu.sh — build & install Media Sorter on Ubuntu / Debian.
-# Run from inside the cloned repo:   bash install-ubuntu.sh
+# install-ubuntu.sh — build & install Media Sorter on Ubuntu / Debian
+# (x86_64 or arm64). Run from inside the cloned repo:   bash install-ubuntu.sh
+#
+# The build itself (Node/npm check, npm ci, fpm on arm64, package checks) is
+# scripts/release.sh --no-upload; this wrapper adds the system packages, the
+# optional editors and the installation of the .deb.
 #
 set -euo pipefail
 
@@ -17,28 +21,12 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f package.json ] || die "package.json not found — run this from the media-sorter project folder."
 
 # ---- 1. system prerequisites ------------------------------------------------
-info "Installing system prerequisites (git, curl, FUSE for AppImage)…"
+info "Installing system prerequisites (git, curl, file, FUSE for AppImage)…"
 sudo apt-get update -y
-sudo apt-get install -y git curl ca-certificates libfuse2 || sudo apt-get install -y git curl ca-certificates libfuse2t64 || true
+sudo apt-get install -y git curl ca-certificates file libfuse2 \
+  || sudo apt-get install -y git curl ca-certificates file libfuse2t64 || true
 
-# ---- 2. Node.js (need >= 22.12: electron 44 / @electron/rebuild) -----------
-need_node=0
-if command -v node >/dev/null 2>&1; then
-  node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)' \
-    || { warn "Node $(node -v) is too old (need >= 22.12)."; need_node=1; }
-else
-  warn "Node.js not found."
-  need_node=1
-fi
-
-if [ "$need_node" -eq 1 ]; then
-  info "Installing Node.js 22.x via NodeSource…"
-  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-  sudo apt-get install -y nodejs
-fi
-info "Using Node $(node -v) / npm $(npm -v)"
-
-# ---- 3. optional editors (G / S shortcuts) ----------------------------------
+# ---- 2. optional editors (G / S shortcuts) ----------------------------------
 # `|| true` so a closed stdin (non-interactive run) doesn't trip `set -e`;
 # the default below (N) then applies.
 read -rp "Install GIMP + Shotcut for the G/S shortcuts? [y/N] " ans || true
@@ -47,38 +35,26 @@ if [[ "${ans:-N}" =~ ^[Yy]$ ]]; then
   sudo apt-get install -y gimp shotcut || warn "Could not install gimp/shotcut — skipping."
 fi
 
-# ---- 4. build ---------------------------------------------------------------
-info "Installing npm dependencies…"
-npm install
+# ---- 3. build (Node 22 + npm, npm ci, packages, checks) ---------------------
+bash scripts/release.sh --no-upload
 
-info "Building Linux packages (AppImage + deb)…"
-npm run dist:linux
-
-# ---- 5. install -------------------------------------------------------------
-appimage="$(ls dist/*.AppImage 2>/dev/null | head -1 || true)"
-deb="$(ls dist/*.deb 2>/dev/null | head -1 || true)"
-
-[ -n "$appimage" ] && chmod +x "$appimage"
+# ---- 4. install -------------------------------------------------------------
+version="$(node -p "require('./package.json').version")"
+case "$(uname -m)" in
+  x86_64) arch=amd64 ;;
+  aarch64|arm64) arch=arm64 ;;
+  *) arch="$(uname -m)" ;;
+esac
+deb="dist/media-sorter_${version}_${arch}.deb"
+[ -f "$deb" ] || die "Package not found: $deb"
 
 echo
-bold "Build complete."
-[ -n "$appimage" ] && echo "  • AppImage : $appimage"
-[ -n "$deb" ]      && echo "  • Debian   : $deb"
-echo
-
-if [ -n "$deb" ]; then
-  # `|| true` so a closed stdin doesn't trip `set -e`; default below (Y) applies.
-  read -rp "Install the .deb system-wide now (adds it to your app menu)? [Y/n] " ans2 || true
-  if [[ ! "${ans2:-Y}" =~ ^[Nn]$ ]]; then
-    info "Installing $deb …"
-    sudo apt-get install -y "./$deb"
-    bold "Installed. Launch 'Media Sorter' from your applications menu."
-    exit 0
-  fi
-fi
-
-if [ -n "$appimage" ]; then
-  bold "To run the portable version:"
-  echo "  $appimage"
-  echo "(You can move it to ~/Applications and double-click it.)"
+# `|| true` so a closed stdin doesn't trip `set -e`; default below (Y) applies.
+read -rp "Install $deb system-wide now (adds it to your app menu)? [Y/n] " ans2 || true
+if [[ ! "${ans2:-Y}" =~ ^[Nn]$ ]]; then
+  info "Installing $deb …"
+  sudo apt-get install -y "./$deb"
+  bold "Installed. Launch 'Media Sorter' from your applications menu."
+else
+  bold "Not installed. Later: sudo apt install ./$deb"
 fi

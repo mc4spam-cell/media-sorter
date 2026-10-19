@@ -230,7 +230,7 @@ renderer : getPendingFile() au démarrage ; onOpenFile() ensuite
 
 Le paquet `trash` est chargé par `import()` dynamique car il est ESM uniquement (commentaire `main.js`). Son export par défaut accepte un chemin ou un tableau (`lib/undo.js` lui passe des tableaux). Depuis `trash` 8.1, le binaire `macos-trash` est universel (x86_64 + arm64) : il tourne nativement sur Apple Silicon.
 
-**Montée de version (non publiée, voir `CHANGELOG.md` [Unreleased])** : la 1.2.0 a été livrée sur Electron 31.7.7 / electron-builder 24.13.3 / trash 7.2.0. Le passage à Electron 44 / electron-builder 26 / trash 9 implique :
+**Montée de version de la 1.3.0** (voir `CHANGELOG.md`) : les 1.2.x ont été livrées sur Electron 31.7.7 / electron-builder 24.13.3 / trash 7.2.0. Le passage à Electron 44 / electron-builder 26 / trash 9 implique :
 
 - **Node ≥ 22.12** pour installer et construire (`engines` du paquet `electron` et de `@electron/rebuild`) ; `package.json` le déclare dans `engines`, `install-ubuntu.sh` installe Node 22.x.
 - **macOS 13 minimum** (Electron 44 ; 31 acceptait 10.15). `LSMinimumSystemVersion` du bundle vaut `13.0`.
