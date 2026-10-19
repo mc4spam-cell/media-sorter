@@ -48,13 +48,32 @@ esac
 deb="dist/media-sorter_${version}_${arch}.deb"
 [ -f "$deb" ] || die "Package not found: $deb"
 
+# WebP rotation needs an ffmpeg with libwebp. The bundled one lacks it on
+# arm64; the app then uses the system ffmpeg.
+bundled="node_modules/ffmpeg-static/ffmpeg"
+if ! "$bundled" -hide_banner -encoders 2>/dev/null | grep -q libwebp \
+   && ! /usr/bin/ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libwebp; then
+  read -rp "WebP rotation needs the system ffmpeg on this machine. Install it (apt install ffmpeg)? [Y/n] " ans3 || true
+  if [[ ! "${ans3:-Y}" =~ ^[Nn]$ ]]; then
+    sudo apt-get install -y ffmpeg || warn "Could not install ffmpeg — WebP rotation won't work."
+  fi
+fi
+
 echo
 # `|| true` so a closed stdin doesn't trip `set -e`; default below (Y) applies.
 read -rp "Install $deb system-wide now (adds it to your app menu)? [Y/n] " ans2 || true
 if [[ ! "${ans2:-Y}" =~ ^[Nn]$ ]]; then
   info "Installing $deb …"
-  sudo apt-get install -y "./$deb"
+  # From /tmp: apt reads local packages as its _apt user, which can't enter a
+  # private home directory (it then prints a harmless "unsandboxed" notice).
+  tmpdeb="/tmp/$(basename "$deb")"
+  cp "$deb" "$tmpdeb"
+  sudo apt-get install -y "$tmpdeb"
+  rm -f "$tmpdeb"
   bold "Installed. Launch 'Media Sorter' from your applications menu."
 else
-  bold "Not installed. Later: sudo apt install ./$deb"
+  bold "Not installed. Later: cp $deb /tmp/ && sudo apt install /tmp/$(basename "$deb")"
+fi
+if ! git symbolic-ref -q HEAD >/dev/null; then
+  info "Built from a tag (detached HEAD — normal). Back to main: git checkout main"
 fi

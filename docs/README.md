@@ -1,7 +1,7 @@
 # Media Sorter : documentation de spécifications
 
 Spécifications fonctionnelles et techniques de **Media Sorter**, trieur de photos et vidéos en Electron.
-Version documentée : **1.3.0**.
+Version documentée : **1.3.1**.
 
 Ces documents sont **reconstitués à partir du code source** (`main.js`, `lib/`, `preload.js`, `renderer/`, `package.json`, `install-ubuntu.sh`) et des fichiers d'accompagnement (`README.md`, `CHANGELOG.md`).
 

@@ -236,16 +236,40 @@ if command -v file >/dev/null 2>&1; then
 else
   warn "'file' not installed — skipped the ffmpeg architecture check."
 fi
-"$FF" -hide_banner -encoders 2>/dev/null | grep -q libwebp \
-  && ok "ffmpeg can encode WebP (rotation)" \
-  || warn "This ffmpeg has no libwebp encoder: WebP rotation will fail on $TARGET."
+# WebP rotation needs libwebp; the app falls back to a system ffmpeg
+# (/usr/bin/ffmpeg…) when the bundled one lacks it (Linux arm64 build).
+if "$FF" -hide_banner -encoders 2>/dev/null | grep -q libwebp; then
+  ok "ffmpeg can encode WebP (rotation)"
+else
+  SYS_FF=""
+  for f in /usr/bin/ffmpeg /usr/local/bin/ffmpeg /opt/homebrew/bin/ffmpeg; do
+    if [ -x "$f" ] && "$f" -hide_banner -encoders 2>/dev/null | grep -q libwebp; then SYS_FF="$f"; break; fi
+  done
+  if [ -n "$SYS_FF" ]; then
+    ok "Bundled ffmpeg has no WebP encoder; the app will use $SYS_FF for WebP rotation."
+  else
+    warn "Bundled ffmpeg has no WebP encoder: on $TARGET, WebP rotation needs a system ffmpeg (sudo apt install ffmpeg) on the machine running the app."
+  fi
+fi
+
+# Checking out a tag leaves git in "detached HEAD" (git warns about it): fine
+# for building; this tells how to get back.
+back_to_branch() {
+  if ! git symbolic-ref -q HEAD >/dev/null; then
+    echo
+    info "You're on $(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD) (detached HEAD, expected after 'git checkout vX.Y.Z'). Back to main: git checkout main"
+  fi
+}
 
 if [ "$UPLOAD" -eq 0 ]; then
   step "Done (not published)"
   for f in "${FILES[@]}"; do echo "  $f"; done
   case "$TARGET" in
-    linux-*) echo; echo "Install: sudo apt install ./${FILES[0]}" ;;
+    # From /tmp: apt can't read files in a private home directory as its _apt
+    # user and prints a harmless "unsandboxed as root" notice otherwise.
+    linux-*) echo; echo "Install: cp '${FILES[0]}' /tmp/ && sudo apt install '/tmp/$(basename "${FILES[0]}")'" ;;
   esac
+  back_to_branch
   exit 0
 fi
 
@@ -276,3 +300,4 @@ for f in "${FILES[@]}"; do
   gh release upload "$TAG" "$f" --clobber
 done
 ok "Published: $(gh release view "$TAG" --json url -q .url)"
+back_to_branch

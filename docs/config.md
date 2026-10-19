@@ -78,7 +78,7 @@ Définis dans `renderer/renderer.js` et répétés dans `package.json` pour les 
 | Photos | `jpg`, `jpeg`, `png`, `webp` | `gif`, `bmp`, `avif` |
 | Videos | `avi`, `mpg`, `mpeg`, `mkv` | `mp4`, `mov`, `m4v`, `webm`, `wmv`, `flv`, `3gp` |
 
-Associations système déclarées (`package.json`, `build.fileAssociations`) : `jpg`, `jpeg`, `png`, `webp`, `gif`, `bmp`, `avif`, avec le type MIME correspondant. Les vidéos ne sont pas associées.
+Associations système : `build.fileAssociations` déclare les extensions `jpg`, `jpeg`, `png`, `webp`, `gif`, `bmp`, `avif` (macOS : `CFBundleDocumentTypes`, rôle Viewer) ; sous Linux, les types MIME correspondants sont dans `build.linux.mimeTypes` et ne vont que dans le `.desktop` (`MimeType=`), ce qui enregistre « Ouvrir avec ». *(Depuis la 1.3.1 : un `mimeType` dans `fileAssociations` faisait générer par electron-builder un `/usr/share/mime/packages/media-sorter.xml` invalide — erreur « invalid MIME-type » à l'installation du `.deb` — et aurait de toute façon redéfini `image/jpeg` & co. dans la base MIME du système.)* Les vidéos ne sont pas associées.
 
 Remarques :
 - **Formats photo décodables uniquement** : `tiff`, `tif` et `heic` ont été retirés du menu Types **et** des associations système (le 2026-10-17), car Chromium ne les décode pas — les lister n'apportait qu'un badge « sans aperçu ». La liste du menu et celle des associations sont donc désormais alignées. Code (`TYPE_SETS`) et README concordent (plus d'écart `tif`).
@@ -184,7 +184,9 @@ Extrait des paramètres pertinents pour la configuration :
 | `build.asar` | `false` | `package.json` |
 | `build.afterPack` | `./build/afterPack.js` (nettoyage `Info.plist`, macOS) | `package.json` |
 | `build.files` | `main.js`, `preload.js`, `lib/**/*`, `renderer/**/*`, `package.json` | `package.json` |
-| `build.fileAssociations` | Image (jpg, jpeg, png, webp, gif, bmp, avif), rôle Viewer | `package.json` |
+| `build.fileAssociations` | Image (jpg, jpeg, png, webp, gif, bmp, avif), rôle Viewer, sans `mimeType` | `package.json` |
+| `build.linux.mimeTypes` | `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `image/bmp`, `image/avif` (`.desktop` seulement) | `package.json` |
+| `homepage`, `repository` | dépôt GitHub (requis pour construire le `.deb`) | `package.json` |
 | `build.linux.target` | `AppImage`, `deb` | `package.json` |
 | `build.linux.category` | `Graphics` | `package.json` |
 | `build.mac.target` | `dmg` | `package.json` |

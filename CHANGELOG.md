@@ -4,6 +4,24 @@ All notable changes to **Media Sorter** are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.3.1] — 2026-10-20
+
+### Fixed
+- **Installing the `.deb` no longer reports an invalid MIME type**
+  (`/usr/share/mime/packages/media-sorter.xml`). The image types now go only
+  into the desktop entry (`linux.mimeTypes`), which is what registers "Open
+  with"; the package no longer touches the system MIME database.
+- **WebP rotation on Linux arm64.** The bundled ffmpeg of that platform has
+  no WebP encoder; the app now uses the system ffmpeg instead (`sudo apt
+  install ffmpeg`, which `install-ubuntu.sh` offers), and says so if none is
+  installed.
+
+### Changed
+- `install-ubuntu.sh` installs the `.deb` from `/tmp`, which silences apt's
+  harmless "Download is performed unsandboxed as root" notice.
+- `scripts/release.sh` reports whether a system ffmpeg covers WebP, and
+  reminds how to leave the "detached HEAD" state after building a tag.
+
 ## [1.3.0] — 2026-10-20
 
 ### Added
@@ -140,6 +158,7 @@ and videos.
 - macOS `.dmg` and Linux `.AppImage` + `.deb` via electron-builder.
 - Bundled `ffmpeg` (ffmpeg-static); OS trash via the `trash` package.
 
+[1.3.1]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.3.1
 [1.3.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.3.0
 [1.2.1]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.1
 [1.2.0]: https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.0

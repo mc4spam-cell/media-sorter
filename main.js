@@ -184,7 +184,7 @@ if (!gotLock) {
       journalPath: path.join(app.getPath('userData'), 'undo-journal.json'),
       trash: async (p) => (await getTrash())(p),
       beginTransfer,
-      rotate: (p, dir) => rotateFile(p, dir, { ffmpegPath }),
+      rotate: (p, dir) => rotateFile(p, dir, { ffmpegPath, env: childEnv() }),
     });
     // Recover from a crash: whatever the last run left staged goes to the OS
     // trash. Queued ahead of any trash/undo the user triggers.
@@ -537,7 +537,7 @@ ipcMain.handle('file:rotate', async (_e, paths, dir) => {
   for (const p of [].concat(paths)) {
     try {
       await assertRegularFile(p);
-      await rotateFile(p, dir, { ffmpegPath });
+      await rotateFile(p, dir, { ffmpegPath, env: childEnv() });
       rotated.push(p);
     } catch (e) {
       errors.push({ path: p, message: e.message });

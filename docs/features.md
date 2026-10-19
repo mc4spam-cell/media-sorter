@@ -302,6 +302,7 @@ Note : en mode grille, **Échap** réduit une sélection multiple au fichier cou
   - **JPEG** : seule l'étiquette EXIF *Orientation* est réécrite (ou ajoutée), donc instantané, sans réencodage, et toutes les autres métadonnées (date de prise de vue, GPS…) sont conservées. Chromium, comme les visionneuses usuelles, affiche l'image selon cette étiquette ;
   - **PNG, BMP** : ffmpeg fait tourner les pixels, sans perte ;
   - **WebP** : ffmpeg fait tourner les pixels et réécrit en **WebP sans perte** (un WebP avec perte peut donc grossir ; la première conversion en RGBA est le seul arrondi, imperceptible) ;
+    Il faut un ffmpeg doté de l'encodeur **libwebp** : celui embarqué l'a, sauf sous **Linux arm64** (build `ffmpeg-static`). L'app se rabat alors sur un ffmpeg du système (`/usr/bin/ffmpeg`, `/usr/local/bin/ffmpeg`, `/opt/homebrew/bin/ffmpeg`) ; sans lui, la rotation WebP échoue avec un message qui indique `sudo apt install ffmpeg` (`webpFfmpeg`, `lib/rotate.js`). *(1.3.1)*
   - **GIF, AVIF** : non pris en charge (message « rotation not supported »).
 - Écriture atomique (fichier temporaire caché puis renommage) ; la **date de modification est conservée**, pour que le tri par date ne bouge pas.
 - Un lot est **une** entrée d'annulation (FN-20) ; Z rétablit l'orientation d'origine. Maintenir une flèche enchaîne les rotations dans l'ordre (`rotateChain`).

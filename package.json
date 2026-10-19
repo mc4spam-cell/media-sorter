@@ -1,6 +1,6 @@
 {
   "name": "media-sorter",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Sort photos and videos with thumbnail/fullscreen views, keyboard navigation, multi-selection, undoable trash, rename, move and copy.",
   "main": "main.js",
   "scripts": {
@@ -42,8 +42,7 @@
         "ext": ["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"],
         "name": "Image",
         "description": "Image",
-        "role": "Viewer",
-        "mimeType": "image/jpeg;image/png;image/webp;image/gif;image/bmp;image/avif"
+        "role": "Viewer"
       }
     ],
     "linux": {
@@ -51,7 +50,15 @@
         "AppImage",
         "deb"
       ],
-      "category": "Graphics"
+      "category": "Graphics",
+      "mimeTypes": [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "image/bmp",
+        "image/avif"
+      ]
     },
     "mac": {
       "target": [
