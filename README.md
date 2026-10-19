@@ -69,15 +69,16 @@ Click **Open folder…**, then switch between the **Photos** and **Videos** tabs
 
 Prebuilt packages for each release are on the
 [GitHub Releases page](https://github.com/mc4spam-cell/media-sorter/releases/latest).
-The current **v1.3.1** release ships the macOS Intel build; the other packages
-follow as each machine runs `scripts/release.sh`. Until then, the newest
-prebuilt asset per platform is:
+The current **v1.3.1** release ships five packages:
 
-| Platform | Latest prebuilt asset |
+| Platform | Asset |
 |----------|-------|
-| macOS — Intel (macOS 13+) | `Media.Sorter-1.3.1-x64.dmg` ([v1.3.1](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.3.1)) |
-| macOS — Apple Silicon | `Media.Sorter-1.1.0-arm64.dmg` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
-| Ubuntu / Debian (x86_64) | `media-sorter_1.1.0_amd64.deb` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
+| macOS — Apple Silicon (macOS 13+) | `Media.Sorter-1.3.1-arm64.dmg` |
+| macOS — Intel (macOS 13+) | `Media.Sorter-1.3.1-x64.dmg` |
+| Ubuntu / Debian — x86_64 | `media-sorter_1.3.1_amd64.deb` (or the portable `Media.Sorter-1.3.1.AppImage`) |
+| Ubuntu / Debian — arm64 | `media-sorter_1.3.1_arm64.deb` |
+
+On arm64 Linux, WebP rotation uses the system ffmpeg: `sudo apt install ffmpeg`.
 
 ### macOS
 1. Download the `.dmg` for your architecture from the release page above
@@ -93,9 +94,11 @@ prebuilt asset per platform is:
    - run `xattr -dr com.apple.quarantine "/Applications/Media Sorter.app"` once.
 
 ### Ubuntu / Linux
-The quickest option is the prebuilt `media-sorter_1.1.0_amd64.deb` from the
-[release page](https://github.com/mc4spam-cell/media-sorter/releases/latest):
-`sudo apt install ./media-sorter_1.1.0_amd64.deb`.
+The quickest option is the prebuilt `.deb` for your architecture from the
+[release page](https://github.com/mc4spam-cell/media-sorter/releases/latest), installed from `/tmp`
+(apt then doesn't print its harmless "unsandboxed" notice):
+`cp media-sorter_1.3.1_amd64.deb /tmp/ && sudo apt install /tmp/media-sorter_1.3.1_amd64.deb`
+(`_arm64.deb` on arm64).
 
 To build it yourself, do so **on the Linux machine** (so the correct Linux ffmpeg binary is fetched — a build made on macOS would ship the macOS ffmpeg and video thumbnails would not work).
 
