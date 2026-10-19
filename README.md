@@ -69,14 +69,15 @@ Click **Open folder…**, then switch between the **Photos** and **Videos** tabs
 
 Prebuilt packages for each release are on the
 [GitHub Releases page](https://github.com/mc4spam-cell/media-sorter/releases/latest).
-The current **v1.2.1** release ships the macOS Intel build; the Apple Silicon
-and Ubuntu packages are still those of v1.1.0 (newer builds to follow):
+The current **v1.3.0** release ships the macOS Intel build; the other packages
+follow as each machine runs `scripts/release.sh`. Until then, the newest
+prebuilt asset per platform is:
 
 | Platform | Latest prebuilt asset |
 |----------|-------|
-| macOS — Intel | `Media.Sorter-1.2.1-x64.dmg` ([v1.2.1](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.2.1)) |
+| macOS — Intel (macOS 13+) | `Media.Sorter-1.3.0-x64.dmg` ([v1.3.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.3.0)) |
 | macOS — Apple Silicon | `Media.Sorter-1.1.0-arm64.dmg` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
-| Ubuntu / Debian | `media-sorter_1.1.0_amd64.deb` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
+| Ubuntu / Debian (x86_64) | `media-sorter_1.1.0_amd64.deb` ([v1.1.0](https://github.com/mc4spam-cell/media-sorter/releases/tag/v1.1.0)) |
 
 ### macOS
 1. Download the `.dmg` for your architecture from the release page above
